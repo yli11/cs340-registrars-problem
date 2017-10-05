@@ -1,0 +1,4 @@
+#ignore log files when compiling TeX
+*.log
+*.aux
+*.synctex.gz
