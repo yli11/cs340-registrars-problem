@@ -31,6 +31,6 @@ CS340 Project
 3. Five further constraints
 	1. subjects overlap (e.g. cs & math)
 	2. students might have stronger preference for one class than another
-#links for overleaf(our paper)
+# links for overleaf(our paper)
 https://www.overleaf.com/11426327xrbzdmhwpvgf
 feel free to edit it.
