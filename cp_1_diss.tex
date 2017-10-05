@@ -1,0 +1,39 @@
+\documentclass[11pt, oneside]{article}   	% use "amsart" instead of "article" for AMSLaTeX format
+\usepackage{geometry}
+\usepackage[linesnumbered]{algorithm2e}
+\geometry{letterpaper}
+\usepackage{graphicx}
+\usepackage{amssymb}
+\usepackage{amsthm}
+\usepackage{parskip}
+\usepackage{titlesec}
+
+\graphicspath{ {images/} }
+
+\newtheorem*{theorem}{Theorem}
+\newtheorem*{lemma}{Lemma}
+%SetFonts
+\titleformat{\paragraph}
+{\normalfont\normalsize\bfseries}{\theparagraph}{1em}{}
+\titlespacing*{\paragraph}
+{0pt}{3.25ex plus 1ex minus .2ex}{1.5ex plus .2ex}
+\title{CS340 - Project}
+\author{Yutong Li, Tianming Xu, Jiaping Wang}
+%\date{}							% Activate to display a given date or no date
+
+\begin{document}
+\maketitle
+
+\section{Checkpoing 1}
+\subsection{Discussion}
+Well, it's not that intuitive to come up with this algorithm. First, we brainstormed some algorithms, dynamic programming, graph algorithm, recursion, naive algorithm, and greedy algorithm. It's pretty clear that dynamic programming and recursion are not suitable for this problem, since there's nothing to conquer and divide. Even if it does have something we can recursively solve, for this particular problem, we cannot afford the cost of recursion since the number of students is fairly large and is predicable our computer will run out of stack if we insist to do some recursions. Also, it's hard to construct for this problem. Suppose we let students become vertices, then there're still a bunch of limits we need to consider, and thus the edges are hard to defined. Then we come up with greedy algorithm which contains no backtracking which implies that there might exist a $O(nlogn)$ or less greedy algorithm that can solve the problem.\\
+\\One of the most important complications we met in designing algorithm is to be "greedy" on which aspect. According to the description of the problem, the performance of the algorithm depends on how many classes students can take considering their preference lists. Thus, the intuition is to compute out for each class how many students to take, then this become the first part of our algorithm, looking into students' preference lists and calculate the popularity of each class.\\
+\\ Then we decided to first guarantee classes with highest popularity, thus there comes the sorting part of the algorithm. Naturally, most popular class(with the most students wanting to take) should occupy the largest room. And in order to avoid collisions, the second popular class pairs up with the second largest room, so on so forth. Then there came our first corner case, what if the number of students wanting to take the most popular class exceeds the size of the largest room? Luckily, in the FAQ part we get clarifications that no class should have a second section.\\
+\\ After dealing with rooms, we should look into time slots. The main idea is to reduce time collisions between those popular classes. Then we modified our previous statement about room: rather than pair the largest room with the most popular, the second largest with the second most popular, we can pair up the largest room with all those popular classes, and arrange them in different time slots. Under such a circumstance, we can put each room into full use.\\
+\\Considering limit on teachers then. What if in some cases, in the pairing process we find that a teacher might have time conflicts? In other words, a teacher $t_i$ teaches two classes $c_i,c_j$ and $c_j$ is less popular. Though taught in different rooms and have different popularity, $c_i,c_j$ somehow will be arranged into the same time slots $x$. One of the choice is to skip $c_j$, but this is not optimal. Instead, we simply move one time slots downward, and set $c_j$, to that slot, and keep track of the time slots we skipped. Consequently, the room $c_j$ was in won't be empty at time slot $x$, since we will set the next class to $x$.\\
+\\For this problem, the most obvious difficulty is to deal with all these restrictions and solve collisions. It is also predictable that there're lots of corner cases we need to deal with when implementing the algorithm. 
+
+
+\end{document}
+
+
