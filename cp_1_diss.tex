@@ -3,15 +3,14 @@
 \usepackage[linesnumbered]{algorithm2e}
 \geometry{letterpaper}
 \usepackage{graphicx}
-\usepackage{amssymb}
-\usepackage{amsthm}
+\usepackage{amsmath, amsthm, amssymb}
 \usepackage{parskip}
 \usepackage{titlesec}
-
+\usepackage{enumerate}
 \graphicspath{ {images/} }
 
 \newtheorem*{theorem}{Theorem}
-\newtheorem*{lemma}{Lemma}
+\newtheorem*{lem}{Lemma}
 %SetFonts
 \titleformat{\paragraph}
 {\normalfont\normalsize\bfseries}{\theparagraph}{1em}{}
@@ -29,34 +28,94 @@
 %Before we start talking about our actual algorithm, since we have a lot of types of data in this problem, we'd like to denote them to make the paper be more readable and concise.\\
 Let $S$ be the set of students, with $|S|=n$. Each student will have a list of class requests, so let $l_{s_i}$ to represent the $i^{th}$ student's list of class requests. We denote the set of teachers by $P$ and its order by $m$. Let $C$ be the set of classes, and so we have $|C|=2m$ classes. Denote the set of classrooms by $R$, with $|R|=y$, and the set of time slots as $T$, with $|T|=x$. 
 \subsection{Algorithm Description}
-Given $S, P, C, T$, we determine a class schedule with following rule: schedule as many students as possible into each class in decreasing order of the class' popularity. \par 
-Start off by traversing the request lists for each $s\in S$ and creating a list $K$ storing the number of students who signed up for each class, indexed by classes. Sort $K$ by decreasing order of popularity. Then, sort the classrooms in decreasing order of capacity. For each teacher $p\in P$, construct a list to store the time period during which he or she is unavailable (none at this point). Initialize the variable, $skippedSlot$, to none. 
+Given $S, P, C, R, T$, we determine a class schedule with following rule: schedule as many students as possible into each class in decreasing order of the class' popularity. \par 
+Start off by traversing the request lists for each $s\in S$ and creating a list $K$ storing the number of students who signed up for each class, indexed by classes. Sort $K$ in decreasing order of popularity. Then, sort the classrooms in decreasing order of capacity. For each teacher $p\in P$, construct a list to store the time period during which he or she is unavailable (none at this point). 
 
-%We will pick the most popular class and assign it in the largest classroom at the earliest time slot we currently have until we reach the end of list or we are out of available room.%Besides that we will have two extra identifier "full" and "skippedSlot(?)". \\
-
-
-Then, we can begin pairing classes with classrooms and time periods. Starting with the most popular class $c_1$, we try scheduling this class in the biggest classroom $r_1$ during the first time slot $t_1$. If $r_1$ is occupied during $t_1$, we move on to the next available time slot. When all time slots for a classroom has class assignments, we move on to the next largest classroom. Once we arrive at an empty classroom-time pair, find the teacher $p_1$ who teaches $c_1$ and check for time he/she is unavailable. If $p_1$ has no conflict during this time, put the class-classroom-time combination into the final schedule. Otherwise, set $skippedSlot$ to the assignment $(r_1, t_1)$ and move on to the next time slot. Once this class is scheduled, mark both the teacher and classroom as unavailable during this time period. Repeat this process for the next most popular class, except that once $skippedSlot$ is non-empty, we can assign the class to $skippedSlot$ directly and set it to empty again. Otherwise, try scheduling the class to the next largest classroom at its earliest time slot, checking for conflicts with teacher and classroom. Keep doing so until either all classrooms are filled at all times, or all $2m$ classes has been scheduled.\\
-
+Then, we can begin pairing classes with classrooms and time periods. Starting with the most popular class $c_1$, we try scheduling this class in the biggest classroom $r_1$ during the first time slot $t_1$. Find the teacher $p_1$ who teaches $c_1$ and check for time he/she is unavailable. If $p_1$ has no conflict during this time, put the class-room-time combination into the final schedule. Otherwise, add the assignment $(r_1, t_1)$ as a skipped slot and move on to the next time slot. Once this class is scheduled, mark both the teacher and classroom as unavailable during this time period. Repeat this process for the next most popular class in the next time slot, except that if there are previously skipped slots, we try scheduling this class to the earliest skipped slot first. Otherwise, try scheduling the class in the next largest classroom during its earliest time slot, checking for conflicts with teacher. When all time slots for a classroom has class assignments, we move on to the next largest classroom. Keep doing so until either all classrooms are filled at all times, or all $2m$ classes has been scheduled.\\
+\section{Pseudocode}
+\begin{algorithm}[H]
+\SetKwFunction{Schedule}{Schedule}
+\SetKwProg{Fn}{Function}{}{}
+\Fn{\Schedule{S, P, C, R, T}}{
+$K[c]\gets 0$ for all $c\in C$\\
+\For{$s \in S$}{
+\For{$c\in l_s$}{$K[c]\gets K[c]+1$.}
+}
+Sort $C$ in decreasing order of popularity $K[c]$.\\
+Sort $R$ in decreasing order of capacity.\\
+$k, j\gets 0$\\
+$skippedSlots\gets$ empty\\
+ \While{$j < y$ and $k<2m$}{
+ 	Choose classroom $R_j$\\
+	$i\gets 0$\\
+    \While{$i < x$  and $k<2m$}{
+    	Choose time $T_i$\\
+ 	\uIf{skippedSlots is empty}{
+        	\uIf{ teacher $P_{C_k}$ who teaches $C_k$ is available in $T_i$}{
+        		$Schedule[R_j][T_i]\gets C_k$\\
+		$i\gets i+1, k\gets k+1$\\
+		append $T_i$ to $occupied[P_{C_k}]$}
+        	\uElse{
+        		append $(R_j, T_i)$ to $skippedSlots$\\
+		$i\gets i+1$
+    		  }
+       	 }
+	 \uElse{
+	   pop the first element in $skippedSlots$\\
+	   \uIf{ teacher $P_{C_k}$ has a conflict with the skipped slot}{
+	    push the slot back to $skippedSlots$\\
+	    repeat lines $18-24$
+	   }\uElse{
+	   	$Schedule[skippedSlot]\gets C_k$\\
+		$k\gets k+1$}
+         }
+        	}
+	$j\gets j+1$
+}
+\Return $Schedule$
+}
+\end{algorithm}
 
 \section{Time Analysis}
 \subsection{Data Structure}
-For each student, the class requests can be stored as a linked list, so accessing a student's class takes $O(1)$. Hence, it takes $O(n)$ to traverse all class requests and initialize the array $K$. Sorting $K$ with the standard quicksort requires $O(n\log n)$.\par
-To store information about whether a classroom is taken at a certain time, we can create an array of size $x$ for each $r_i\in R$, where the $j$-th value in the array indicates whether $r_i$ is available during time $t_j$. Constructing the array takes $O(xy)$. Accessing or changing each value takes $O(1)$.\par
+The class requests of each student can be stored as a linked list. Constructing the lists in $S$ takes $O(n)$ and accessing a student's class choices takes $O(1)$. Furthermore, it takes $O(n)$ to traverse all class requests and initialize the array $K$. Sorting $K$ with the standard quicksort requires $O(n\log n)$.\par
+The instructor information $P$ for classes can be stored in an array indexed by the classes. Thus initialization of $P$ takes $O(m)$, and retrieving the teacher of a given class $C_k$ takes $O(1)$. Similarly, classroom capacities can be stored in an array. Construction of $R$ takes $O(y)$ and sorting $R$ takes $O(y\log y)$.\par
+Information about teachers' assignments can be stored in a dictionary indexed by the teachers. Each time a class is scheduled, append the time $t_i$ to the teacher's assignments. Because each teacher teaches at most two classes, the size of a teacher's assignments cannot exceed $1$. Thus, checking whether $P_{C_k}$ has conflict during time $T_i$ takes $O(1)$. Construction of the dictionary takes $O(m)$.\par
+The skipped slots due to teachers' time conflicts can be stored in a FIFO queue. Therefore, pushing a slot into the queue, checking if it's empty, as well as popping its first element can be done in constant time. Since each teacher teaches at most two classes, each teacher can have at most $1$ conflict and so construction requires $O(m)$.\par
+To store the final schedule, we can create a dictionary of dictionaries. The outer dictionary has $r_j\in R$ as keys, and for each $r_j$ we construct a dictionary of size $x$, where the $i$-th value in the array indicates whether $r_j$ is available during time $t_i$. Constructing the nested dictionary takes $O(xy)$. Accessing or changing each value can be done in $O(1)$.\par
 
+
+\subsection{Time Complexity}
+Using the data structures described above, we know that, in total, initialization requires \[n+n+n\log n+y+y\log y+m+m+xy = O(n\log n+y\log y+m +xy).\] By construction of the algorithm, the {\it while} loop terminates when all classrooms are $filled$ during all time periods or $2m$ classes are scheduled. Therefore, the nested {\it while} loops runs $\min(xy, 2m)$ times. Therefore, the overall time complexity of the algorithm is 
+\begin{align*}
+T(n) &= O(n\log n+y\log y+m +xy)+O(\min(xy, 2m))\\
+& = O(n\log n+y\log y+m +xy)
+\end{align*}
 
 \section{Proof of Correctness}
-\underline{\textit{Proof of Termination.}}
+\underline{\textit{Proof of Termination.}} By time analysis we know the {\it while} loop runs at most $\min(xy, 2m)$ times. Each time a class is scheduled, $k, j$ are incremented by $1$. Furthermore, each time $j$ reaches $x$, $i$ is also incremented by $1$. Therefore, one of the loop preconditions will be violated as $i$ and $k$ keeps increasing. Hence, the algorithm terminates.
 
 \underline{\textit{Proof of Validity.}}
-
+We claim that each class-room-time combination added to the final schedule is valid. \\ \par
+\begin{lem}No two classes are scheduled in the same classroom at the same time.\end{lem}
+\begin{proof}Suppose for a contradiction that $C_k$ and $C_l$ are both scheduled into the same slot, $(R_j, T_i)$. Without loss of generality, suppose $l>k$ in the sorted list of classes. By execution of the algorithm, we know $C_k$ gets added into the schedule before $C_l$. Then, when $C_k$ is added, we increment $i$ by $1$ so that all classes after $C_k$ don't get assigned to the same time. When $i$ exceeds $x$, we set $i$ back to $0$ and increment $j$. Therefore, by the time $C_l$ gets scheduled to $(R_j', T_i')$ we have:
+\[ \begin{cases} j'\geq j \\i'>i& \text{,if } $j=j'$ \end{cases}\]
+Therefore, it is impossible to have $j=j'$ and $i=i'$ at the same time. Hence, there does not exist two classes that conflict with each other. \end{proof}
+\begin{lem}No teacher is teaching two classes at the same time.\end{lem}
+\begin{proof}Suppose there is a teacher $p$ who is scheduled to teach $C_k$ and $C_l$ at the same time. Without loss of generality, suppose $C_k$ is more popular than $C_l$. Thus, when $C_l$ gets scheduled, $C_k$ has already been scheduled in room $R_j$ at time $T_i$. Thus, $occupied[p]$ will contain $T_i$.\par
+However, before the schedule of $C_l$ is added, we check for $occupied[p]$. Since $T_i$ is in $occupied[p]$, $C_l$ will never be scheduled during the same time $T_i$. Therefore, we conclude this is impossible. 
+\end{proof}
+Since the returned schedule satisfies the two lemmas above, it does not contain any conflicts and hence is a valid schedule.
 \section{Discussion}
-% Can you at least use language that is slightly more formal??
-Well, it's not that intuitive to come up with this algorithm. First, we brainstormed some algorithms, dynamic programming, graph algorithm, recursion, naive algorithm, and greedy algorithm. It's pretty clear that dynamic programming and recursion are not suitable for this problem, since there's nothing to conquer and divide. Even if it does have something we can recursively solve, for this particular problem, we cannot afford the cost of recursion since the number of students is fairly large and is predicable our computer will run out of stack if we insist to do some recursions. Also, it's hard to construct for this problem. Suppose we let students become vertices, then there're still a bunch of limits we need to consider, and thus the edges are hard to defined. Then we come up with greedy algorithm which contains no backtracking which implies that there might exist a $O(nlogn)$ or less greedy algorithm that can solve the problem.\\
-\\One of the most important complications we met in designing algorithm is to be "greedy" on which aspect. According to the description of the problem, the performance of the algorithm depends on how many classes students can take considering their preference lists. Thus, the intuition is to compute out for each class how many students to take, then this become the first part of our algorithm, looking into students' preference lists and calculate the popularity of each class.\\
-\\ Then we decided to first guarantee classes with highest popularity, thus there comes the sorting part of the algorithm. Naturally, most popular class(with the most students wanting to take) should occupy the largest room. And in order to avoid collisions, the second popular class pairs up with the second largest room, so on so forth. Then there came our first corner case, what if the number of students wanting to take the most popular class exceeds the size of the largest room? Luckily, in the FAQ part we get clarifications that no class should have a second section.\\
-\\ After dealing with rooms, we should look into time slots. The main idea is to reduce time collisions between those popular classes. Then we modified our previous statement about room: rather than pair the largest room with the most popular, the second largest with the second most popular, we can pair up the largest room with all those popular classes, and arrange them in different time slots. Under such a circumstance, we can put each room into full use.\\
-\\Considering limit on teachers then. What if in some cases, in the pairing process we find that a teacher might have time conflicts? In other words, a teacher $p_i$ teaches two classes $c_i,c_j$ and $c_j$ is less popular. Though taught in different rooms and have different popularity, $c_i,c_j$ somehow will be arranged into the same time slots $x$. One of the choice is to skip $c_j$, but this is not optimal. Instead, we simply move one time slots downward, and set $c_j$, to that slot, and keep track of the time slots we skipped. Consequently, the room $c_j$ was in won't be empty at time slot $x$, since we will set the next class to $x$.\\
-\\For this problem, the most obvious difficulty is to deal with all these restrictions and solve collisions. It is also predictable that there're lots of corner cases we need to deal with when implementing the algorithm. 
+Possible solution might come from following categories:  dynamic programming, graph algorithm, recursion, naive algorithm, and greedy algorithm. 
+\par First consider dynamic programming and recursion. Both algorithms involve ideas of dividing and conquering. However, in scheduling problem, since rooms can only be used by single class in each time slots, dividing students into different groups and arrange schedules respectively is trivial. Thus, dynamic programming and recursions cannot apply to this problem.\par
+Then suppose graph algorithm can tackle this problem. According to the property of all graph algorithm, there must exist a way to transform given inputs into a graph data model, such as DAG. In any graph model, limits are interpreted as weights of edge, while objects constrained by limit are interpreted as vertices. Consider following: since the performance of algorithm depends on how many classes students can take, consequently, students are defined as vertices. Furthermore, the order of schedule has no effect on the performance, thus the graph is undirected. As stated above, limits are interpreted as edges, and according to the description of the problem, room size, teachers, time slots are all restrictions the algorithm needs to fulfill. Nevertheless, each edge can only pair up with a single restriction. Hence, an undirected graph cannot represent scheduling problem.\par
+Naive algorithm aims to enumerate all possible schedules and compares their performance in order to get an optimal output. Yet, restrictions exist among given input, and thus requires large amount of collisions check. As a result, naive algorithm cannot given an acceptable time complexity.\par
+Greedy algorithm guarantees optimal result for each iteration, in this case the number of class students can take. Accordingly, greedy algorithm always needs to ensure the most popular class is correctly arranged. In other words, the most popular class need to pair up with the largest room in order to get as most students as possible enrolled.
+\par What is more, limits also exist on room size and time slots. Owing to the fact that a room can only be arranged to one time slot at a time, algorithm needs to schedule classes not only regarding room size but also guarantee that time conflict will not occur among popular classes.
+\par Complications come mainly from restrictions on teachers and time slots. A simple corner case is that a teacher teaches two classes $c_i,c_j$, $c_i$ is more popular in $c_j$, but the algorithm automatically arrange them into the same time slot. A natural way to solve this conflict is to simply skip that time slot and move downward. However, this will result in an empty room at that time slot. To make full use of each room, a skipped room marker is needed. Whenever the algorithm skipped a room, the marker will keep track of that room, and arrange the next popular to that time slot.
+\par To conclude, greedy algorithm will give an near-optimal result and can be done in an acceptable time complexity.
+ 
 
 
 \end{document}
