@@ -29,19 +29,16 @@
 Let $S$ be the set of students, with $|S|=n$. Each student will have a list of class requests, so let $l_{s_i}$ to represent the $i^{th}$ student's list of class requests. We denote the set of teachers by $P$ and its order by $m$. Let $C$ be the set of classes, and so we have $|C|=2m$ classes. Denote the set of classrooms by $R$, with $|R|=y$, and the set of time slots as $T$, with $|T|=x$. 
 \subsection{Algorithm Description}
 Given $S, P, C, R, T$, we determine a class schedule with following rule: schedule as many students as possible into each class in decreasing order of the class' popularity. \par 
-Start off by traversing the request lists for each $s\in S$ and creating a list $K$ storing the number of students who signed up for each class, indexed by classes. Sort $K$ in decreasing order of popularity. Then, sort the classrooms in decreasing order of capacity. For each teacher $p\in P$, construct a list to store the time period during which he or she is unavailable (none at this point). 
+Start off by sorting the classes in decreasing order of popularity, which is defined by the number of students who signed up for each class. Sort the classrooms in decreasing order of capacity. 
 
-Then, we can begin pairing classes with classrooms and time periods. Starting with the most popular class $c_1$, we try scheduling this class in the biggest classroom $r_1$ during the first time slot $t_1$. Find the teacher $p_1$ who teaches $c_1$ and check for time he/she is unavailable. If $p_1$ has no conflict during this time, put the class-room-time combination into the final schedule. Otherwise, add the assignment $(r_1, t_1)$ as a skipped slot and move on to the next time slot. Once this class is scheduled, mark both the teacher and classroom as unavailable during this time period. Repeat this process for the next most popular class in the next time slot, except that if there are previously skipped slots, we try scheduling this class to the earliest skipped slot first. Otherwise, try scheduling the class in the next largest classroom during its earliest time slot, checking for conflicts with teacher. When all time slots for a classroom has class assignments, we move on to the next largest classroom. Keep doing so until either all classrooms are filled at all times, or all $2m$ classes has been scheduled.\\
+Then, we can begin pairing classes with classrooms and time periods. Starting with the most popular class $c_1$, we try scheduling this class in the biggest classroom $r_1$ during the first time slot $t_1$. Find the teacher $p_1$ who teaches $c_1$. If $p_1$ has no conflict during this time, put the class-room-time combination into the final schedule. Otherwise, add the assignment $(r_1, t_1)$ as a skipped slot and move on to the next time slot. Once this class is scheduled, mark both the teacher and classroom as unavailable during this time period. Repeat this process for the next most popular class in the next time slot, except that if there are previously skipped slots, we try scheduling the class to the first skipped slot first. Otherwise, try scheduling the class in the next largest classroom during its earliest time slot, checking for conflicts with teacher. When all time slots for a classroom has class assignments, we move on to the next largest classroom. Keep doing so until either all classrooms are filled at all times, or all $2m$ classes has been scheduled.\\
 \section{Pseudocode}
 \begin{algorithm}[H]
 \SetKwFunction{Schedule}{Schedule}
 \SetKwProg{Fn}{Function}{}{}
 \Fn{\Schedule{S, P, C, R, T}}{
-$K[c]\gets 0$ for all $c\in C$\\
-\For{$s \in S$}{
-\For{$c\in l_s$}{$K[c]\gets K[c]+1$.}
-}
-Sort $C$ in decreasing order of popularity $K[c]$.\\
+\For{all $c\in C$}{Count the number of students who signed up for $c$}
+Sort $C$ in decreasing order of popularity.\\
 Sort $R$ in decreasing order of capacity.\\
 $k, j\gets 0$\\
 $skippedSlots\gets$ empty\\
@@ -91,6 +88,7 @@ Using the data structures described above, we know that, in total, initializatio
 T(n) &= O(n\log n+y\log y+m +xy)+O(\min(xy, 2m))\\
 & = O(n\log n+y\log y+m +xy)
 \end{align*}
+Since $n$ dominates, we can say the time complexity of the algorithm is $O(n\log n)$.
 
 \section{Proof of Correctness}
 \underline{\textit{Proof of Termination.}} By time analysis we know the {\it while} loop runs at most $\min(xy, 2m)$ times. Each time a class is scheduled, $k, j$ are incremented by $1$. Furthermore, each time $j$ reaches $x$, $i$ is also incremented by $1$. Therefore, one of the loop preconditions will be violated as $i$ and $k$ keeps increasing. Hence, the algorithm terminates.
