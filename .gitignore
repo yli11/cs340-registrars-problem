@@ -2,3 +2,6 @@
 *.log
 *.aux
 *.synctex.gz
+
+#ignore bytecode files
+__pycache__/*
