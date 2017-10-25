@@ -1,4 +1,4 @@
-class Student(object):
+class Student:
     """A student is a class containing unique identity and a list of preference classes
         
        Args:
@@ -6,11 +6,14 @@ class Student(object):
             classes: classes this student wants to take
 
     """
-    def __init__(self,idx, classes=[]):
+    def __init__(self,idx, classes=None):
         self.idx = idx
-        self.classes = classes
+        if classes is None:
+            self.classes = []
+        else:
+            self.classes = classes
 
-class ClassRoom(object):
+class ClassRoom:
     """A classroom is a room with specific size
        Args:
             idx: A unique label of a room
@@ -22,7 +25,7 @@ class ClassRoom(object):
         self.capacity = size
 
 
-class Course(object):
+class Course:
     """A course is an object with unique name, 
                                   unique teacher(for the basic version), and 
                                   students who wants to take it(will be determined by random choice for bacic version)
@@ -32,7 +35,10 @@ class Course(object):
             teacher: The one who teaches this class
             specs: Students who will take this class
     """
-    def __init__(self,name,teacher, specs=[]):
+    def __init__(self,name,teacher, specs=None):
         self.name = name
         self.teacher = teacher
-        self.specs = specs
+        if specs is None:
+            self.specs = []
+        else:
+            self.specs = specs

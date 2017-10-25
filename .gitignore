@@ -4,4 +4,6 @@
 *.synctex.gz
 
 #ignore bytecode files
-__pycache__/*
+code/__pycache__/*
+*.pyc
+*.pyo

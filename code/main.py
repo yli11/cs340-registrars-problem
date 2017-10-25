@@ -1,18 +1,19 @@
 import argparse
 import pandas as pd
 from collections import defaultdict
+from components import ClassRoom, Student, Course
 
 
 
-""" Parse preference lists input
-
-     Args:
-        filename (string): name of the input preferece lists
-
-    Returns:
-        all_students (list): a list of Student objects
-"""
 def read_prefs(filename):
+    """ Parse preference lists input
+
+         Args:
+            filename (string): name of the input preferece lists
+
+        Returns:
+            all_students (list): a list of Student objects
+    """
     # read input file
     df_raw = pd.read_csv(filename, skiprows=1, delim_whitespace=True, names=['Student','Class1','Class2','Class3','Class4'])
     
@@ -24,24 +25,24 @@ def read_prefs(filename):
         classes[i].append(int(df_raw.loc[df_raw['Student']==i, 'Class3']))
         classes[i].append(int(df_raw.loc[df_raw['Student']==i, 'Class4']))
 
-    # construct a new DataFrame and return
-    all_students = pd.DataFrame(list(classes.items()),columns=['Student', 'Classes'])
-    #all_students = [ Student(i, df_students.loc[i-1, 'Classes']) for i in df_students['Student'] ]
+    # construct a new DataFrame and return a list
+    df_students = pd.DataFrame(list(classes.items()),columns=['Student', 'Classes'])
+    all_students = [ Student(i, df_students.loc[i-1, 'Classes']) for i in df_students['Student'] ]
 
     return all_students
 
 
-""" Parse constraints info
-
-     Args:
-        filename (string): name of the input file
-
-    Returns:
-        all_rooms (list): a list of Classroom objects
-        all_classes (list): a list of Course objects
-        ntimes (int): the number of non-overlapping time slots
-"""
 def read_constraints(filename):
+    """ Parse constraints info
+
+         Args:
+            filename (string): name of the input file
+
+        Returns:
+            all_rooms (list): a list of Classroom objects
+            all_classes (list): a list of Course objects
+            ntimes (int): the number of non-overlapping time slots
+    """
     # read file
     df_raw = pd.read_csv(filename, delim_whitespace=True, header=None)
 
@@ -63,29 +64,47 @@ def read_constraints(filename):
     df_teachers.columns = new_header
 
 
-    # dict versions for testing
+    """ dict versions for testing
     all_rooms = {int(r): int(df_rooms.loc[df_rooms['Rooms']==r, nrooms]) for r in df_rooms['Rooms']}
     all_classes = {int(c): int(df_teachers.loc[df_teachers['Teachers']==c, nteachers]) for c in df_teachers['Teachers']}
+    """
     
-    # construct Room and Course objects
-    #all_rooms = [Classroom(int(r): int(df_rooms.loc[df_rooms['Rooms']==r, nrooms])) for r in df_rooms['Rooms']]
-    #all_classes = [Course(int(c), int(df_teachers.loc[df_teachers['Teachers']==c, nteachers])) for c in df_teachers['Teachers']]
+    # construct ClassRoom and Course objects
+    all_rooms = [ClassRoom(int(r), int(df_rooms.loc[df_rooms['Rooms']==r, nrooms])) for r in df_rooms['Rooms']]
+    all_classes = [Course(int(c), int(df_teachers.loc[df_teachers['Teachers']==c, nteachers])) for c in df_teachers['Teachers']]
 
     return ntimes, all_rooms, all_classes
 
 
-""" Construct the pool of prospective students for all classes
+def count_prefs(C, S):
+    """ Initialize the pool of prospective students for all classes
 
-     Args:
-        C (list): a list of Course objects
-        S (list): a list of Student objects
+         Args:
+            C (list): a list of Course objects
+            S (list): a list of Student objects
+    """
+    for s in S:
+        for c_id in s.classes:
+           a_class = findClass(C, c_id)
+           a_class.specs.append(s) 
+           print('Adding student '+str(s.idx)+' to class '+str(a_class.name))
 
-    Returns:
-        C (list): a list of Course objects whose `specs` field stores a list of students hoping to take this class
-"""
-def create_classes(C, S):
 
-    return None
+
+def findClass(C, c_id):
+    """ find the class object by its id
+
+        Args:
+            C (list): a list of Course objects
+
+        Returns:
+            this_class (Course object)
+            False if no matching class found
+    """
+    for this_class in C:
+        if this_class.name == c_id:
+            return this_class
+    return False
 
 
 if __name__ == "__main__":
@@ -96,12 +115,11 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
 
-    # print results for testing
+    # parse input
     all_students = read_prefs(args.infiles[0])
     ntimes, all_rooms, all_classes = read_constraints(args.infiles[1])
-    print("Student preference lists:\n", all_students)
-    print("# of time slots: " + str(ntimes))
-    print("Classroom capacities: ", all_rooms)
-    print("Classes teacher info: ", all_classes)
-
-    
+    count_prefs(all_classes, all_students)
+    """
+    for c in all_classes:
+        print(c.name, "specs: ", [s.idx for s in c.specs])
+    """
