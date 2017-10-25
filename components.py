@@ -1,13 +1,13 @@
 class Student(object):
     """A student is a class containing unique identity and a list of preference classes"""
-    def __init__(self,id, classes):
-        self.id = id
+    def __init__(self,idx, classes):
+        self.idx = idx
         self.classes = classes
 
 class ClassRoom(object):
     """A classroom is a room with specific size"""
-    def __init__(self,id,size):
-        self.id = id
+    def __init__(self,idx,size):
+        self.idx = idx
         self.capacity = size
 
 
