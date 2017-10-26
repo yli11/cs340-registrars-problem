@@ -108,28 +108,28 @@ def choose_student(schedule):
     """
     choose student from specs to into the student list of corresponding class in dictionary
     """
-    if course:
-        for a_class in course:
-            s = a_class.specs
-            time = course.get(a_class)[1]
-            counter = 0
-            for student in s:
-                if counter > course.get(a_class)[0].capacity:
-                    break
-                else:
-                    flag = True
-                    for c in student.classes:
-                        if c == a_class:
+    for a_class in schedule:
+        student_list = a_class.specs
+        time = schedule.get(a_class)[1]
+        count = 0
+        for student in student_list:
+            if count > schedule.get(a_class)[0].capacity:
+                break
+            else:
+                flag = True
+                for oneoftheclass in student.classes:
+                    if oneoftheclass in schedule:
+                        if oneoftheclass == a_class:
                             continue
                         else:
                             if time == schedule.get(oneoftheclass)[1]:
                                 flag = False
                                 break
-                    if flag:
-                        schedule.get(a_class)[2].append(student)
-                        count = count + 1
-                    else:
-                        continue
+                if flag:
+                    schedule.get(a_class)[2].append(student)
+                    count = count + 1
+                else:
+                    continue
     return schedule
 
 
@@ -159,7 +159,7 @@ def TeacherIsValid(teacherList, result, classToSchedule, timeToSchedule):
 
 def make_schedule(all_students, all_classes, all_rooms, ntimes, teacherList):
     all_classes.sort(key=lambda x: len(x.specs), reverse=True)
-    all_rooms.sort(key=lambda x: x.size, reverse=True)
+    all_rooms.sort(key=lambda x: x.capacity, reverse=True)
     skipped_slots = Queue()
     num_classes = len(all_classes)
     num_rooms = len(all_rooms) * ntimes  # This can avoid a while loop stated in line 9 from our pseudocode
@@ -173,7 +173,7 @@ def make_schedule(all_students, all_classes, all_rooms, ntimes, teacherList):
                 # class name : location, time, students
                 skipped_slots.put(index_time)
                 index_time = (index_time + 1) % ntimes
-            result[all_classes[index_class]] = (index_room // ntimes, index_time, [])
+            result[all_classes[index_class]] = (all_rooms[index_room//ntimes], index_time, [])
             index_time = (index_time + 1) % ntimes
             index_room = index_room + 1
             index_class = index_class + 1
@@ -185,7 +185,7 @@ def make_schedule(all_students, all_classes, all_rooms, ntimes, teacherList):
                     possible_time = skipped_slots.get_nowait()
                     if TeacherIsValid(teacherList, result, all_classes[index_class], possible_time):
                         # class name : location, time, students
-                        result[all_classes[index_class]] = (index_room // ntimes, possible_time, [])
+                        result[all_classes[index_class]] = (all_rooms[index_room//ntimes], possible_time, [])
                         index_room = index_room + 1
                         index_class = index_class + 1
                         assigned = True
@@ -200,14 +200,13 @@ def make_schedule(all_students, all_classes, all_rooms, ntimes, teacherList):
                         # class name : location, time, students
                         skipped_slots.put(index_time)
                         index_time = (index_time + 1) % ntimes
-                    result[all_classes[index_class]] = (index_room // ntimes, index_time, [])
+                    result[all_classes[index_class]] = (all_rooms[index_room//ntimes], index_time, [])
                     index_time = (index_time + 1) % ntimes
                     index_room = index_room + 1
                     index_class = index_class + 1
             else:                               # recover skipped_slots
                     while not copy_skipped_slots.empty():
                         skipped_slots.put(copy_skipped_slots.get())
-    result = choose_student(result)
     return result
 
 
@@ -235,7 +234,9 @@ if __name__ == "__main__":
     if not args.extension:
     # make schedule for basic version
         schedule = make_schedule(all_students, all_classes, all_rooms, ntimes, all_teachers)
-        print(schedule)
+        choose_student(schedule)
+
+
 
     if args.test:
         print("\nInput - Time Information:")
@@ -252,3 +253,7 @@ if __name__ == "__main__":
         print("\nInput - Class information:")
         for c in all_classes:
             print("Class name:", c.name, "Teacher:", c.teacher, "specs:", [s.idx for s in c.specs])
+
+        print("\nOutput - Class schedule with students")
+        for course in schedule:
+            print("Class name:", course.name, "Teacher:", course.teacher, "Location:", schedule[course][0].idx, "Time:", schedule[course][1], "Students:",[s.idx for s in schedule[course][2]])
