@@ -69,7 +69,7 @@ def read_constraints(filename):
     all_rooms = [ClassRoom(int(r), int(df_rooms.loc[df_rooms['Rooms'] == r, nrooms])) for r in df_rooms['Rooms']]
     all_classes = [Course(int(c), int(df_teachers.loc[df_teachers['Teachers'] == c, nteachers])) for c in
                    df_teachers['Teachers']]
-    all_teachers = defaultdict(list)
+    all_teachers = {}
 
     for t in range(1,int(nteachers)+1):
         all_teachers[t] = list(map(int, df_teachers.loc[df_teachers[nteachers] == str(t), 'Teachers'].tolist()))
