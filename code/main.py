@@ -7,10 +7,10 @@ from components import ClassRoom, Student, Course
 
 def read_prefs(filename):
     """ Parse preference lists input
-         Args:
+        Args:
             filename (string): name of the input preferece lists
         Returns:
-            all_students (list): a list of Student objects
+            all_students (list): a list of Student objects with arrtibute `idx` (int) and `classes` (a list of int)
     """
     # read input file
     df_raw = pd.read_csv(filename, skiprows=1, delim_whitespace=True,
@@ -33,11 +33,11 @@ def read_prefs(filename):
 
 def read_constraints(filename):
     """ Parse constraints info
-         Args:
+        Args:
             filename (string): name of the input file
         Returns:
-            all_rooms (list): a list of Classroom objects
-            all_classes (list): a list of Course objects
+            all_rooms (list): a list of Classroom objects, with attributes `idx` (str) and `capacity` (int)
+            all_classes (list): a list of Course objects, with attributes `name` (str), `teacher` (int), and `spec`s (empty list)
             ntimes (int): the number of non-overlapping time slots
     """
     # read file
@@ -66,7 +66,7 @@ def read_constraints(filename):
     """
 
     # construct ClassRoom and Course objects
-    all_rooms = [ClassRoom(int(r), int(df_rooms.loc[df_rooms['Rooms'] == r, nrooms])) for r in df_rooms['Rooms']]
+    all_rooms = [ClassRoom(r, int(df_rooms.loc[df_rooms['Rooms'] == r, nrooms])) for r in df_rooms['Rooms']]
     all_classes = [Course(int(c), int(df_teachers.loc[df_teachers['Teachers'] == c, nteachers])) for c in
                    df_teachers['Teachers']]
     all_teachers = {}
@@ -79,15 +79,15 @@ def read_constraints(filename):
 
 def count_prefs(C, S):
     """ Initialize the pool of prospective students for all classes
-         Args:
-            C (list): a list of Course objects
+        Args:
+            C (list): a list of Course objects - `specs` field will contain Student objects after executing this function
             S (list): a list of Student objects
     """
     for s in S:
         for c_id in s.classes:
             a_class = find_class(C, c_id)
             a_class.specs.append(s)
-            print('Adding student ' + str(s.idx) + ' to class ' + str(a_class.name))
+            #print('Adding student ' + str(s.idx) + ' to class ' + str(a_class.name))
 
 
 def find_class(C, c_id):
@@ -130,16 +130,13 @@ def choose_student(course):
                         counter += 1
                     else:
                         continue
-            
-                        
-
     return course
 
 
 def TeacherIsValid(teacherList, result, classToSchedule, timeToSchedule):
     """
-    Test whether the class we are scheduling has conflict respect to teachers (whether they're taught by the same teacher
-    and both classes are at the same time slot)
+    Test whether the class we are scheduling has conflict respect to teachers (whether they're taught by the same teacher and both classes are at the same time slot)
+
     Args:
         teacherList: A dictionary where key is teacher value is a list of classes he or she is teaching
         result: The schedule we have so far. Key is class, value is a tuple -> (location, time, students)
@@ -205,11 +202,13 @@ def makeSchedule(all_students, all_classes, all_rooms, ntimes, teacherList):
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description='Schedule classes')
+    parser = argparse.ArgumentParser(description='Usage: python3 main.py <studentprefs.txt> <basic_constraints.txt> (<extension_constriants.txt>) (--extension)')
     parser.add_argument('infiles', type=str, nargs='+', help='Name of input file(s). Assuming the first file contains preference lists, the second file contains basic constraints, the third one contains constraints for Haverford extension.')
     parser.add_argument('--outfile', '-o', type=str, help='Name of output schedule')
     parser.add_argument('--extension', action='store_true',
                         help="whether allowing haverford extension, by default, run the basic version")
+    parser.add_argument('--test', action='store_true',
+                        help="print intermediate outputs")
     args = parser.parse_args()
 
     # parse input
@@ -217,7 +216,18 @@ if __name__ == "__main__":
     ntimes, all_rooms, all_classes, all_teachers = read_constraints(args.infiles[1])
     count_prefs(all_classes, all_students)
 
-    """
-    for c in all_classes:
-        print(c.name, "specs: ", [s.idx for s in c.specs])
-    """
+    if args.test:
+        print("\nInput - Time Information:")
+        print("# of time slots:", ntimes)
+
+        print("\nInput - Room information:")
+        for r in all_rooms:
+            print("Room location:", r.idx, "Size:", r.capacity)
+
+        print("\nInput - Student Preferences")
+        for s in all_students:
+            print("ID:", s.idx, "Preferences:", [c for c in s.classes])
+
+        print("\nInput - Class information:")
+        for c in all_classes:
+            print("Class name:", c.name, "Teacher:", c.teacher, "specs:", [s.idx for s in c.specs])
