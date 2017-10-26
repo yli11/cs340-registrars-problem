@@ -104,19 +104,42 @@ def find_class(C, c_id):
     return False
 
 
-def choose_student(course, roomSize):
+def choose_student(course):
     """
-    choose student from specs to take this class
+    choose student from specs to into the student list of corresponding class in dictionary
     """
-    something = 0
-    return something
+    if course:
+        for a_class in course:
+	    s = a_class.specs
+	    time = course.get(a_class)[1]
+            counter = 0
+	    for student in s:
+                if counter > course.get(a_class)[0].capacity:
+                    break
+                else:
+		    flag = True
+		    for c in student.classes:
+		        if c == a_class:
+		            continue
+                        else:
+                            if time == course.get(c)[1]:
+                                flag = False
+                                break
+                            if flag == True:
+                                course.get(a_class)[2].append(student)
+                                counter += 1
+                            else:
+                                continue
+            
+                        
+
+    return course
 
 
 def TeacherIsValid(teacherList, result, classToSchedule, timeToSchedule):
     """
     Test whether the class we are scheduling has conflict respect to teachers (whether they're taught by the same teacher
     and both classes are at the same time slot)
-
     Args:
         teacherList: A dictionary where key is teacher value is a list of classes he or she is teaching
         result: The schedule we have so far. Key is class, value is a tuple -> (location, time, students)
@@ -156,13 +179,16 @@ def makeSchedule(all_students, all_classes, all_rooms, ntimes, teacherList):
         if skipped_slots.empty():
             if TeacherIsValid(teacherList, result, all_classes[index_class], index_time):
                 # class name : location, time, students
-                result[all_classes[index_class]] = (index_room//ntimes, index_time, [])
+                result[all_classes[index_class]] = (all_rooms[index_room//ntimes], index_time, [])
                 index_time = index_time + 1
                 index_room = index_room + 1
             else:
                 skipped_slots.put(index_time)
                 index_time = index_time+1        # don't need to increment index_room here since no room is assigned
 
+    #result is a dictionary without student list
+    result = choose_student(result)
+    return result
 
 
 
