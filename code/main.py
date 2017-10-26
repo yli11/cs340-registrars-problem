@@ -109,6 +109,7 @@ def choose_student(course):
     choose student from specs to into the student list of corresponding class in dictionary
     """
     if course:
+	#traverse all classes in course
         for a_class in course:
 	    s = a_class.specs
 	    time = course.get(a_class)[1]
