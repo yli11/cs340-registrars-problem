@@ -108,18 +108,18 @@ def choose_student(schedule):
     """
     choose student from specs to into the student list of corresponding class in dictionary
     """
-    if schedule:
-        for a_class in schedule:
-            student_list = a_class.specs
-            time = schedule.get(a_class)[1]
-            count = 0
-            for student in student_list:
-                if count > schedule.get(a_class)[0].capacity:
+    if course:
+        for a_class in course:
+            s = a_class.specs
+            time = course.get(a_class)[1]
+            counter = 0
+            for student in s:
+                if counter > course.get(a_class)[0].capacity:
                     break
                 else:
                     flag = True
-                    for oneoftheclass in student.classes:
-                        if oneoftheclass == a_class:
+                    for c in student.classes:
+                        if c == a_class:
                             continue
                         else:
                             if time == schedule.get(oneoftheclass)[1]:
@@ -157,8 +157,7 @@ def TeacherIsValid(teacherList, result, classToSchedule, timeToSchedule):
         else:
             return True
 
-
-def makeSchedule(all_students, all_classes, all_rooms, ntimes, teacherList):
+def make_schedule(all_students, all_classes, all_rooms, ntimes, teacherList):
     all_classes.sort(key=lambda x: len(x.specs), reverse=True)
     all_rooms.sort(key=lambda x: x.size, reverse=True)
     skipped_slots = Queue()
@@ -212,6 +211,7 @@ def makeSchedule(all_students, all_classes, all_rooms, ntimes, teacherList):
     return result
 
 
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         description='Usage: python3 main.py <studentprefs.txt> <basic_constraints.txt> '
@@ -227,10 +227,15 @@ if __name__ == "__main__":
                         help="print intermediate outputs")
     args = parser.parse_args()
 
-    # parse input
+    # read input
     all_students = read_prefs(args.infiles[0])
     ntimes, all_rooms, all_classes, all_teachers = read_constraints(args.infiles[1])
     count_prefs(all_classes, all_students)
+
+    if not args.extension:
+    # make schedule for basic version
+        schedule = make_schedule(all_students, all_classes, all_rooms, ntimes, all_teachers)
+        print(schedule)
 
     if args.test:
         print("\nInput - Time Information:")
