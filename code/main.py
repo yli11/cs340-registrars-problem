@@ -69,8 +69,12 @@ def read_constraints(filename):
     all_rooms = [ClassRoom(int(r), int(df_rooms.loc[df_rooms['Rooms'] == r, nrooms])) for r in df_rooms['Rooms']]
     all_classes = [Course(int(c), int(df_teachers.loc[df_teachers['Teachers'] == c, nteachers])) for c in
                    df_teachers['Teachers']]
+    all_teachers = defaultdict(list)
 
-    return ntimes, all_rooms, all_classes
+    for t in range(1,int(nteachers)+1):
+        all_teachers[t] = list(map(int, df_teachers.loc[df_teachers[nteachers] == str(t), 'Teachers'].tolist()))
+
+    return ntimes, all_rooms, all_classes, all_teachers
 
 
 def count_prefs(C, S):
@@ -81,12 +85,12 @@ def count_prefs(C, S):
     """
     for s in S:
         for c_id in s.classes:
-            a_class = findClass(C, c_id)
+            a_class = find_class(C, c_id)
             a_class.specs.append(s)
             print('Adding student ' + str(s.idx) + ' to class ' + str(a_class.name))
 
 
-def findClass(C, c_id):
+def find_class(C, c_id):
     """ find the class object by its id
         Args:
             C (list): a list of Course objects
@@ -99,25 +103,26 @@ def findClass(C, c_id):
             return this_class
     return False
 
-"""
-choose student from specs to take this class
-"""
+
 def choose_student(course, roomSize):
+    """
+    choose student from specs to take this class
+    """
     something = 0
     return something
 
 
-"""
-Test whether the class we are scheduling has conflict respect to teachers (whether they're taught by the same teacher
-and both classes are at the same time slot)
-
-Args:
-    teacherList: A dictionary where key is teacher value is a list of classes he's teaching
-    result: The schedule we have so far. Key is class, value is a tuple -> (location, time, students)
-    classToSchedule: The class we're currently scheduling.
-    timeToSchedule: The time we're considering.
-"""
 def TeacherIsValid(teacherList, result, classToSchedule, timeToSchedule):
+    """
+    Test whether the class we are scheduling has conflict respect to teachers (whether they're taught by the same teacher
+    and both classes are at the same time slot)
+
+    Args:
+        teacherList: A dictionary where key is teacher value is a list of classes he or she is teaching
+        result: The schedule we have so far. Key is class, value is a tuple -> (location, time, students)
+        classToSchedule: The class we're currently scheduling.
+        timeToSchedule: The time we're considering.
+    """
     teacher = classToSchedule.teacher
     classes = teacherList.get(teacher)
     if not result.has_key(classes[0]) and not result.has_key(classes[1]):
@@ -175,7 +180,7 @@ def makeSchedule(all_students, all_classes, all_rooms, ntimes, teacherList):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Schedule classes')
-    parser.add_argument('infiles', type=str, nargs='+', help='Name of input file(s)')
+    parser.add_argument('infiles', type=str, nargs='+', help='Name of input file(s). Assuming the first file contains preference lists, the second file contains basic constraints, the third one contains constraints for Haverford extension.')
     parser.add_argument('--outfile', '-o', type=str, help='Name of output schedule')
     parser.add_argument('--extension', action='store_true',
                         help="whether allowing haverford extension, by default, run the basic version")
@@ -183,8 +188,9 @@ if __name__ == "__main__":
 
     # parse input
     all_students = read_prefs(args.infiles[0])
-    ntimes, all_rooms, all_classes = read_constraints(args.infiles[1])
+    ntimes, all_rooms, all_classes, all_teachers = read_constraints(args.infiles[1])
     count_prefs(all_classes, all_students)
+
     """
     for c in all_classes:
         print(c.name, "specs: ", [s.idx for s in c.specs])
