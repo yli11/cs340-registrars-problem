@@ -71,7 +71,7 @@ def read_constraints(filename):
                    df_teachers['Teachers']]
     all_teachers = {}
 
-    for t in range(1,int(nteachers)+1):
+    for t in range(1, int(nteachers) + 1):
         all_teachers[t] = list(map(int, df_teachers.loc[df_teachers[nteachers] == str(t), 'Teachers'].tolist()))
 
     return ntimes, all_rooms, all_classes, all_teachers
@@ -87,7 +87,7 @@ def count_prefs(C, S):
         for c_id in s.classes:
             a_class = find_class(C, c_id)
             a_class.specs.append(s)
-            #print('Adding student ' + str(s.idx) + ' to class ' + str(a_class.name))
+            # print('Adding student ' + str(s.idx) + ' to class ' + str(a_class.name))
 
 
 def find_class(C, c_id):
@@ -104,39 +104,38 @@ def find_class(C, c_id):
     return False
 
 
-def choose_student(course):
+def choose_student(schedule):
     """
     choose student from specs to into the student list of corresponding class in dictionary
     """
-    if course:
-        for a_class in course:
-	    s = a_class.specs
-	    time = course.get(a_class)[1]
-            counter = 0
-	    for student in s:
-                if counter > course.get(a_class)[0].capacity:
+    if schedule:
+        for a_class in schedule:
+            student_list = a_class.specs
+            time = schedule.get(a_class)[1]
+            count = 0
+            for student in student_list:
+                if count > schedule.get(a_class)[0].capacity:
                     break
                 else:
-		    flag = True
-		    for c in student.classes:
-		        if c == a_class:
-		            continue
+                    flag = True
+                    for oneoftheclass in student.classes:
+                        if oneoftheclass == a_class:
+                            continue
                         else:
-                            if time == course.get(c)[1]:
+                            if time == schedule.get(oneoftheclass)[1]:
                                 flag = False
                                 break
-                    if flag == True:
-                        course.get(a_class)[2].append(student)
-                        counter += 1
+                    if flag:
+                        schedule.get(a_class)[2].append(student)
+                        count = count + 1
                     else:
                         continue
-    return course
+    return schedule
 
 
 def TeacherIsValid(teacherList, result, classToSchedule, timeToSchedule):
     """
     Test whether the class we are scheduling has conflict respect to teachers (whether they're taught by the same teacher and both classes are at the same time slot)
-
     Args:
         teacherList: A dictionary where key is teacher value is a list of classes he or she is teaching
         result: The schedule we have so far. Key is class, value is a tuple -> (location, time, students)
@@ -145,9 +144,9 @@ def TeacherIsValid(teacherList, result, classToSchedule, timeToSchedule):
     """
     teacher = classToSchedule.teacher
     classes = teacherList.get(teacher)
-    if not result.has_key(classes[0]) and not result.has_key(classes[1]):
+    if not classes[0] in result and not classes[1] in result:
         return True
-    elif result.has_key(classes[0]):
+    elif classes[0] in result:
         if result.get(classes[0])[1] == timeToSchedule:
             return False
         else:
@@ -158,52 +157,69 @@ def TeacherIsValid(teacherList, result, classToSchedule, timeToSchedule):
         else:
             return True
 
+
 def makeSchedule(all_students, all_classes, all_rooms, ntimes, teacherList):
     all_classes.sort(key=lambda x: len(x.specs), reverse=True)
-    all_rooms.sort(reverse=True)
-    skipped_slots = Queue.Queue()
+    all_rooms.sort(key=lambda x: x.size, reverse=True)
+    skipped_slots = Queue()
     num_classes = len(all_classes)
-    num_rooms = len(all_rooms)*ntimes   # This can avoid a while loop stated in line 9 from our pseudocode
+    num_rooms = len(all_rooms) * ntimes  # This can avoid a while loop stated in line 9 from our pseudocode
     index_class = 0
     index_room = 0
     index_time = 0
     result = {}
     while index_class < num_classes:
-        if index_room == num_rooms:
-            index_room = 0
-        if index_time == ntimes+1:
-            index_time = 0
         if skipped_slots.empty():
-            if TeacherIsValid(teacherList, result, all_classes[index_class], index_time):
+            while not TeacherIsValid(teacherList, result, all_classes[index_class], index_time):
                 # class name : location, time, students
-                result[all_classes[index_class]] = (all_rooms[index_room//ntimes], index_time, [])
-                index_time = index_time + 1
-                index_room = index_room + 1
-            else:
                 skipped_slots.put(index_time)
-                index_time = index_time+1        # don't need to increment index_room here since no room is assigned
-
-    #result is a dictionary without student list
+                index_time = (index_time + 1) % ntimes
+            result[all_classes[index_class]] = (index_room // ntimes, index_time, [])
+            index_time = (index_time + 1) % ntimes
+            index_room = index_room + 1
+            index_class = index_class + 1
+        else:
+            copy_skipped_slots = Queue()
+            assigned = False  # mark whether current class has been assigned
+            while not skipped_slots.empty():
+                try:
+                    possible_time = skipped_slots.get_nowait()
+                    if TeacherIsValid(teacherList, result, all_classes[index_class], possible_time):
+                        # class name : location, time, students
+                        result[all_classes[index_class]] = (index_room // ntimes, possible_time, [])
+                        index_room = index_room + 1
+                        index_class = index_class + 1
+                        assigned = True
+                    else:
+                        copy_skipped_slots.put(possible_time)
+                except StopIteration:
+                    break
+            if skipped_slots.empty():
+                skipped_slots = copy_skipped_slots
+                if not assigned:
+                    while not TeacherIsValid(teacherList, result, all_classes[index_class], index_time):
+                        # class name : location, time, students
+                        skipped_slots.put(index_time)
+                        index_time = (index_time + 1) % ntimes
+                    result[all_classes[index_class]] = (index_room // ntimes, index_time, [])
+                    index_time = (index_time + 1) % ntimes
+                    index_room = index_room + 1
+                    index_class = index_class + 1
+            else:                               # recover skipped_slots
+                    while not copy_skipped_slots.empty():
+                        skipped_slots.put(copy_skipped_slots.get())
     result = choose_student(result)
     return result
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description='Usage: python3 main.py <studentprefs.txt> <basic_constraints.txt> (<extension_constriants.txt>) (--extension)')
-    parser.add_argument('infiles', type=str, nargs='+', help='Name of input file(s). Assuming the first file contains preference lists, the second file contains basic constraints, the third one contains constraints for Haverford extension.')
+    parser = argparse.ArgumentParser(
+        description='Usage: python3 main.py <studentprefs.txt> <basic_constraints.txt> '
+                    '(<extension_constriants.txt>) (--extension)')
+    parser.add_argument('infiles', type=str, nargs='+',
+                        help='Name of input file(s). Assuming the first file contains preference lists, '
+                             'the second file contains basic constraints, the third one contains constraints for '
+                             'Haverford extension.')
     parser.add_argument('--outfile', '-o', type=str, help='Name of output schedule')
     parser.add_argument('--extension', action='store_true',
                         help="whether allowing haverford extension, by default, run the basic version")
