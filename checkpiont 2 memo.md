@@ -48,6 +48,9 @@ Output format
 4. Can have multiple potential teachers for the same course
 5. Teachers have personal conflicts
 6. Classes have prerequisites - these can be scheduled at the same time.
+7. Quarter classes vs. semester classes
+8. Lectures vs. Labs (1 class can have multiple lab sections, but lab runs only once a week)
+
 ### Available Info
 
 1. Enrollment data from the past
