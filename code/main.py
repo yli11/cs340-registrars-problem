@@ -1,8 +1,14 @@
+#! /usr/bin/env python3
+
 import argparse
 import pandas as pd
+import functools
 from multiprocessing import Queue
-from collections import defaultdict
+from collections import defaultdict, OrderedDict
 from components import ClassRoom, Student, Course
+
+# set max column width so that the list of enrolled students will not be cut off
+pd.set_option('max_colwidth', 100000000000)
 
 
 def read_prefs(filename):
@@ -104,6 +110,48 @@ def find_class(C, c_id):
     return False
 
 
+def print_schedule(schedule, fname):
+    """ Output schedule using pandas
+
+        Args:
+            schedule (dict): {Course: (ClassRoom, time, [Students])}
+    """
+    # create a dictionary for pandas to print
+    dict_schedule = OrderedDict()
+    keys = ["Course","Room","Teacher","Time","Students"]
+    for i in keys:
+        dict_schedule.setdefault(i, [])
+
+    for course in schedule:
+        dict_schedule["Course"].append(str(course.name))
+        dict_schedule["Room"].append(schedule[course][0].idx)
+        dict_schedule["Teacher"].append(str(course.teacher))
+        dict_schedule["Time"].append(str(schedule[course][1]))
+        dict_schedule["Students"].append(' '.join([str(s.idx) for s in sorted(schedule[course][2], key=lambda t: t.idx)]))
+
+    # construct a DataFrame from dictionary
+    df_schedule = pd.DataFrame(dict_schedule)
+    result = left_justified(df_schedule)
+    # print the DataFrame
+    with open(fname, 'w') as f:
+        f.write(result)
+
+
+def left_justified(df):
+    """ Helper function for printing schedule, left justify columns
+        Args: df (DataFrame)
+
+        Returns: a formatted string
+    """
+
+    formatters = {}
+    for li in list(df.columns):
+        max_l = df[li].str.len().max()
+        form = "{{:<{}s}}".format(max_l)
+        formatters[li] = functools.partial(str.format, form)
+    return df.to_string(formatters=formatters, justify='left',index=False)
+
+
 def choose_student(schedule):
     """
     choose student from specs to into the student list of corresponding class in dictionary
@@ -130,7 +178,6 @@ def choose_student(schedule):
                     count = count + 1
                 else:
                     continue
-    return schedule
 
 
 def TeacherIsValid(teacherList, result, classToSchedule, timeToSchedule):
@@ -158,16 +205,18 @@ def TeacherIsValid(teacherList, result, classToSchedule, timeToSchedule):
             return True
 
 def make_schedule(all_students, all_classes, all_rooms, ntimes, teacherList):
+    # sort classes by popularity, sort classrooms by size
     all_classes.sort(key=lambda x: len(x.specs), reverse=True)
     all_rooms.sort(key=lambda x: x.capacity, reverse=True)
+
     skipped_slots = Queue()
-    num_classes = len(all_classes)
-    num_rooms = len(all_rooms) * ntimes  # This can avoid a while loop stated in line 9 from our pseudocode
+    num_rooms = len(all_rooms) * ntimes
+    max_num_classes = min(len(all_classes), num_rooms)
     index_class = 0
     index_room = 0
     index_time = 0
     result = {}
-    while index_class < num_classes:
+    while index_class < max_num_classes:
         if skipped_slots.empty():
             while not TeacherIsValid(teacherList, result, all_classes[index_class], index_time):
                 # class name : location, time, students
@@ -205,8 +254,9 @@ def make_schedule(all_students, all_classes, all_rooms, ntimes, teacherList):
                     index_room = index_room + 1
                     index_class = index_class + 1
             else:                               # recover skipped_slots
-                    while not copy_skipped_slots.empty():
-                        skipped_slots.put(copy_skipped_slots.get())
+                while not copy_skipped_slots.empty():
+                    skipped_slots.put(copy_skipped_slots.get())
+    result = OrderedDict(sorted(result.items(), key=lambda t: t[0].name))
     return result
 
 
@@ -235,6 +285,8 @@ if __name__ == "__main__":
     # make schedule for basic version
         schedule = make_schedule(all_students, all_classes, all_rooms, ntimes, all_teachers)
         choose_student(schedule)
+        print_schedule(schedule, args.outfile)
+        
 
 
 
@@ -255,5 +307,11 @@ if __name__ == "__main__":
             print("Class name:", c.name, "Teacher:", c.teacher, "specs:", [s.idx for s in c.specs])
 
         print("\nOutput - Class schedule with students")
+        total_enrollment = 0
         for course in schedule:
-            print("Class name:", course.name, "Teacher:", course.teacher, "Location:", schedule[course][0].idx, "Time:", schedule[course][1], "Students:",[s.idx for s in schedule[course][2]])
+            print("Class name:", course.name, "Teacher:", course.teacher, "Time:", schedule[course][1])
+            print("Location:", schedule[course][0].idx, "Classroom size:", schedule[course][0].capacity, "Enrollment:", len(schedule[course][2]))
+            total_enrollment += len(schedule[course][2])
+            print("Students:",[s.idx for s in schedule[course][2]],"\n")
+
+        print("Total Enrollment:",total_enrollment)
