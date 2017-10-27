@@ -5,6 +5,7 @@ import pandas as pd
 import functools
 from multiprocessing import Queue
 from collections import defaultdict, OrderedDict
+from random import shuffle
 from components import ClassRoom, Student, Course
 
 # set max column width so that the list of enrolled students will not be cut off
@@ -158,6 +159,7 @@ def choose_student(schedule):
     """
     for a_class in schedule:
         student_list = a_class.specs
+        shuffle(student_list)
         time = schedule.get(a_class)[1]
         count = 0
         for student in student_list:
