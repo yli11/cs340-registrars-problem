@@ -2,7 +2,9 @@
 
 import argparse
 import pandas as pd
+import subprocess
 import functools
+from io import StringIO
 from multiprocessing import Queue
 from collections import defaultdict, OrderedDict
 from random import shuffle
@@ -67,11 +69,6 @@ def read_constraints(filename):
     df_teachers = df_teachers[1:]
     df_teachers.columns = new_header
 
-    """ dict versions for testing
-    all_rooms = {int(r): int(df_rooms.loc[df_rooms['Rooms']==r, nrooms]) for r in df_rooms['Rooms']}
-    all_classes = {int(c): int(df_teachers.loc[df_teachers['Teachers']==c, nteachers]) for c in df_teachers['Teachers']}
-    """
-
     # construct ClassRoom and Course objects
     all_rooms = [ClassRoom(r, int(df_rooms.loc[df_rooms['Rooms'] == r, nrooms])) for r in df_rooms['Rooms']]
     all_classes = [Course(int(c), int(df_teachers.loc[df_teachers['Teachers'] == c, nteachers])) for c in
@@ -132,30 +129,30 @@ def print_schedule(schedule, fname):
 
     # construct a DataFrame from dictionary
     df_schedule = pd.DataFrame(dict_schedule)
-    result = left_justified(df_schedule)
+    #result = left_justified(df_schedule)
+    df_schedule.to_csv(fname, index=False,sep="\t")
     # print the DataFrame
-    with open(fname, 'w') as f:
-        f.write(result)
+    # with open(fname, 'w') as f:
+        # f.write(result)
 
 
-def left_justified(df):
-    """ Helper function for printing schedule, left justify columns
-        Args: df (DataFrame)
+# def left_justified(df):
+    # """ Helper function for printing schedule, left justify columns
+        # Args: df (DataFrame)
 
-        Returns: a formatted string
-    """
-
-    formatters = {}
-    for li in list(df.columns):
-        max_l = df[li].str.len().max()
-        form = "{{:<{}s}}".format(max_l)
-        formatters[li] = functools.partial(str.format, form)
-    return df.to_string(formatters=formatters, justify='left',index=False)
+        # Returns: a formatted string
+    # """
+    # formatters = {}
+    # for li in list(df.columns):
+        # max_l = df[li].str.len().max()
+        # form = "{{:<{}s}}".format(max_l)
+        # formatters[li] = functools.partial(str.format, form)
+    # return df.to_string(formatters=formatters, justify='left',index=False)
 
 
 def choose_student(schedule):
     """
-    choose student from specs to into the student list of corresponding class in dictionary
+    Choose student from specs to into the student list of corresponding class in dictionary
     """
     for a_class in schedule:
         student_list = a_class.specs
@@ -205,6 +202,7 @@ def TeacherIsValid(teacherList, result, classToSchedule, timeToSchedule):
             return False
         else:
             return True
+
 
 def make_schedule(all_students, all_classes, all_rooms, ntimes, teacherList):
     # sort classes by popularity, sort classrooms by size
@@ -288,7 +286,7 @@ if __name__ == "__main__":
         schedule = make_schedule(all_students, all_classes, all_rooms, ntimes, all_teachers)
         choose_student(schedule)
         print_schedule(schedule, args.outfile)
-        
+        subprocess.call(["perl", "is_valid.pl", args.infiles[1], args.infiles[0], args.outfile]) 
 
 
 
