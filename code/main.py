@@ -109,14 +109,13 @@ def find_class(C, c_id):
 
 def print_schedule(schedule, fname):
     """ Output schedule using pandas
-
         Args:
             schedule (dict): {Course: (ClassRoom, time, [Students])}
     """
     # create a dictionary for pandas to print
     schedule = OrderedDict(sorted(schedule.items(), key=lambda t: t[0].name))
     dict_schedule = OrderedDict()
-    keys = ["Course","Room","Teacher","Time","Students"]
+    keys = ["Course", "Room", "Teacher", "Time", "Students"]
     for i in keys:
         dict_schedule.setdefault(i, [])
 
@@ -129,7 +128,7 @@ def print_schedule(schedule, fname):
 
     # construct a DataFrame from dictionary and print schedule
     df_schedule = pd.DataFrame(dict_schedule)
-    df_schedule.to_csv(fname, index=False,sep="\t")
+    df_schedule.to_csv(fname, index=False, sep="\t")
 
 
 def choose_student(schedule):
@@ -203,18 +202,15 @@ def make_schedule(all_students, all_classes, all_rooms, ntimes, teacherList):
             copy_skipped_slots = Queue()
             assigned = False  # mark whether current class has been assigned
             while not skipped_slots.empty():
-                try:
-                    possible_time = skipped_slots.get_nowait()
-                    if TeacherIsValid(teacherList, result, all_classes[index_class], possible_time):
+                possible_time = skipped_slots.get_nowait()
+                if TeacherIsValid(teacherList, result, all_classes[index_class], possible_time):
                         # class name : location, time, students
-                        result[all_classes[index_class]] = (all_rooms[index_room//ntimes], possible_time, [])
-                        index_room = index_room + 1
-                        index_class = index_class + 1
-                        assigned = True
-                    else:
-                        copy_skipped_slots.put(possible_time)
-                except StopIteration:
-                    break
+                    result[all_classes[index_class]] = (all_rooms[index_room//ntimes], possible_time, [])
+                    index_room = index_room + 1
+                    index_class = index_class + 1
+                    assigned = True
+                else:
+                    copy_skipped_slots.put(possible_time)
             if skipped_slots.empty():
                 skipped_slots = copy_skipped_slots
                 if not assigned:
@@ -254,11 +250,11 @@ if __name__ == "__main__":
     count_prefs(all_classes, all_students)
 
     if not args.extension:
-    # make schedule for basic version
+        # make schedule for basic version
         schedule = make_schedule(all_students, all_classes, all_rooms, ntimes, all_teachers)
         choose_student(schedule)
         print_schedule(schedule, args.outfile)
-        subprocess.call(["perl", "is_valid.pl", args.infiles[1], args.infiles[0], args.outfile]) 
+        subprocess.call(["perl", "is_valid.pl", args.infiles[1], args.infiles[0], args.outfile])
 
 
 
@@ -282,8 +278,9 @@ if __name__ == "__main__":
         total_enrollment = 0
         for course in schedule:
             print("Class name:", course.name, "Teacher:", course.teacher, "Time:", schedule[course][1])
-            print("Location:", schedule[course][0].idx, "Classroom size:", schedule[course][0].capacity, "Enrollment:", len(schedule[course][2]))
+            print("Location:", schedule[course][0].idx, "Classroom size:", schedule[course][0].capacity, "Enrollment:",
+                  len(schedule[course][2]))
             total_enrollment += len(schedule[course][2])
-            print("Students:",[s.idx for s in schedule[course][2]],"\n")
+            print("Students:", [s.idx for s in schedule[course][2]], "\n")
 
-        print("Total Enrollment:",total_enrollment)
+        print("Total Enrollment:", total_enrollment)
