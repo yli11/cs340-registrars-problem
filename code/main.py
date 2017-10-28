@@ -162,14 +162,14 @@ def TeacherIsValid(teacherList, result, classToSchedule, timeToSchedule):
     """
     teacher = classToSchedule.teacher
     classes = teacherList.get(teacher)
-    if (not classes[0] in result) and (not classes[1] in result):
+    if (classes[0] not in result) and (classes[1] not in result):
         return True
     elif classes[0] in result:
         if result.get(classes[0])[1] == timeToSchedule:
             return False
         else:
             return True
-    else:
+    elif classes[1] in result:
         if result.get(classes[1])[1] == timeToSchedule:
             return False
         else:
