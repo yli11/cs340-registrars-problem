@@ -165,10 +165,7 @@ def TeacherIsValid(teacherList, result, classToSchedule, timeToSchedule):
     teacher = classToSchedule.teacher
     classes = teacherList[teacher]
     already_scheduled = [find_class(result, c) for c in classes if find_class(result, c)]
-    if not already_scheduled: 
-        return True
-    else:
-        return (not any(result[c][1] == timeToSchedule for c in already_scheduled)) 
+    return (not any(result[c][1] == timeToSchedule for c in already_scheduled)) 
 
 
 def make_schedule(all_students, all_classes, all_rooms, ntimes, teacherList):
@@ -265,7 +262,7 @@ if __name__ == "__main__":
         print("\nInput - Teacher information:")
         for r in all_teachers:
             print("ID:", r, "Classes:", all_teachers[r])
-            
+
         print("\nInput - Student Preferences")
         for s in all_students:
             print("ID:", s.idx, "Preferences:", [c for c in s.classes])
