@@ -114,6 +114,7 @@ def print_schedule(schedule, fname):
             schedule (dict): {Course: (ClassRoom, time, [Students])}
     """
     # create a dictionary for pandas to print
+    schedule = OrderedDict(sorted(schedule.items(), key=lambda t: t[0].name))
     dict_schedule = OrderedDict()
     keys = ["Course","Room","Teacher","Time","Students"]
     for i in keys:
@@ -228,7 +229,6 @@ def make_schedule(all_students, all_classes, all_rooms, ntimes, teacherList):
             else:                               # recover skipped_slots
                 while not copy_skipped_slots.empty():
                     skipped_slots.put(copy_skipped_slots.get())
-    result = OrderedDict(sorted(result.items(), key=lambda t: t[0].name))
     return result
 
 
