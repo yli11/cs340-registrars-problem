@@ -194,7 +194,7 @@ def make_schedule(all_students, all_classes, all_rooms, ntimes, teacherList):
                 # class name : location, time, students
                 skipped_slots.put(index_time)
                 index_time = (index_time + 1) % ntimes
-            result[all_classes[index_class]] = (all_rooms[(index_room+1)//ntimes], index_time, [])
+            result[all_classes[index_class]] = (all_rooms[index_room//ntimes], index_time, [])
             index_time = (index_time + 1) % ntimes
             index_room = index_room + 1
             index_class = index_class + 1
@@ -205,7 +205,7 @@ def make_schedule(all_students, all_classes, all_rooms, ntimes, teacherList):
                 possible_time = skipped_slots.get_nowait()
                 if TeacherIsValid(teacherList, result, all_classes[index_class], possible_time):
                         # class name : location, time, students
-                    result[all_classes[index_class]] = (all_rooms[(index_room+1)//ntimes], possible_time, [])
+                    result[all_classes[index_class]] = (all_rooms[index_room//ntimes], possible_time, [])
                     index_room = index_room + 1
                     index_class = index_class + 1
                     assigned = True
@@ -219,7 +219,7 @@ def make_schedule(all_students, all_classes, all_rooms, ntimes, teacherList):
                         # class name : location, time, students
                         skipped_slots.put(index_time)
                         index_time = (index_time + 1) % ntimes
-                    result[all_classes[index_class]] = (all_rooms[(index_room+1)//ntimes], index_time, [])
+                    result[all_classes[index_class]] = (all_rooms[index_room//ntimes], index_time, [])
                     index_time = (index_time + 1) % ntimes
                     index_room = index_room + 1
                     index_class = index_class + 1
