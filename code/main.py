@@ -26,11 +26,19 @@ def read_prefs(filename):
 
     # put each student's class choices into a list
     classes = defaultdict(list)
-    for i in df_raw['Student']:
-        classes[i].append(int(df_raw.loc[df_raw['Student'] == i, 'Class1']))
-        classes[i].append(int(df_raw.loc[df_raw['Student'] == i, 'Class2']))
-        classes[i].append(int(df_raw.loc[df_raw['Student'] == i, 'Class3']))
-        classes[i].append(int(df_raw.loc[df_raw['Student'] == i, 'Class4']))
+    try:
+        for i in df_raw['Student']:
+            classes[int(i)].append(int(df_raw.loc[df_raw['Student'] == i, 'Class1']))
+            classes[int(i)].append(int(df_raw.loc[df_raw['Student'] == i, 'Class2']))
+            classes[int(i)].append(int(df_raw.loc[df_raw['Student'] == i, 'Class3']))
+            classes[int(i)].append(int(df_raw.loc[df_raw['Student'] == i, 'Class4']))
+    except:
+        print("Something's wrong while reading student preferences. Please check input format.")
+        print("The student",i,'went wrong.')
+        print("His/hers prefereces are", df_raw.loc[i-1])
+        print("Here's what we've got when tring to get Class 1:")
+        print(df_raw.loc[df_raw['Student'] == i, 'Class1'])
+        exit(-1)
 
     # construct a new DataFrame and return a list
     df_students = pd.DataFrame(list(classes.items()), columns=['Student', 'Classes'])
