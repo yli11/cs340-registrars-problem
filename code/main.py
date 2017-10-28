@@ -4,7 +4,6 @@ import argparse
 import pandas as pd
 import subprocess
 import functools
-from io import StringIO
 from multiprocessing import Queue
 from collections import defaultdict, OrderedDict
 from random import shuffle
@@ -127,27 +126,9 @@ def print_schedule(schedule, fname):
         dict_schedule["Time"].append(str(schedule[course][1]))
         dict_schedule["Students"].append(' '.join([str(s.idx) for s in sorted(schedule[course][2], key=lambda t: t.idx)]))
 
-    # construct a DataFrame from dictionary
+    # construct a DataFrame from dictionary and print schedule
     df_schedule = pd.DataFrame(dict_schedule)
-    #result = left_justified(df_schedule)
     df_schedule.to_csv(fname, index=False,sep="\t")
-    # print the DataFrame
-    # with open(fname, 'w') as f:
-        # f.write(result)
-
-
-# def left_justified(df):
-    # """ Helper function for printing schedule, left justify columns
-        # Args: df (DataFrame)
-
-        # Returns: a formatted string
-    # """
-    # formatters = {}
-    # for li in list(df.columns):
-        # max_l = df[li].str.len().max()
-        # form = "{{:<{}s}}".format(max_l)
-        # formatters[li] = functools.partial(str.format, form)
-    # return df.to_string(formatters=formatters, justify='left',index=False)
 
 
 def choose_student(schedule):
@@ -157,26 +138,17 @@ def choose_student(schedule):
     for a_class in schedule:
         student_list = a_class.specs
         shuffle(student_list)
-        time = schedule.get(a_class)[1]
+        time = schedule[a_class][1]
         count = 0
         for student in student_list:
-            if count > schedule.get(a_class)[0].capacity:
+            if count > schedule[a_class][0].capacity:
                 break
+            elif any(otherclass in schedule and schedule[otherclass][1] == time for otherclass in student.classes):
+                continue
             else:
-                flag = True
-                for oneoftheclass in student.classes:
-                    if oneoftheclass in schedule:
-                        if oneoftheclass == a_class:
-                            continue
-                        else:
-                            if time == schedule.get(oneoftheclass)[1]:
-                                flag = False
-                                break
-                if flag:
-                    schedule.get(a_class)[2].append(student)
-                    count = count + 1
-                else:
-                    continue
+                schedule.get(a_class)[2].append(student)
+                count = count + 1
+                student.classes.append(a_class)
 
 
 def TeacherIsValid(teacherList, result, classToSchedule, timeToSchedule):
