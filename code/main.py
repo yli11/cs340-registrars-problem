@@ -47,6 +47,7 @@ def read_constraints(filename):
             all_rooms (list): a list of Classroom objects, with attributes `idx` (str) and `capacity` (int)
             all_classes (list): a list of Course objects, with attributes `name` (str), `teacher` (int), and `spec`s (empty list)
             ntimes (int): the number of non-overlapping time slots
+            all_teachers (dict): {teacher_id (int): class_name (int)}
     """
     # read file
     df_raw = pd.read_csv(filename, delim_whitespace=True, header=None)
@@ -96,7 +97,7 @@ def count_prefs(C, S):
 def find_class(C, c_id):
     """ find the class object by its id
         Args:
-            C (list): a list of Course objects
+            C (iterable): a list of Course objects or a dictionary with Course objects as keys
         Returns:
             this_class (Course object)
             False if no matching class found
@@ -132,8 +133,9 @@ def print_schedule(schedule, fname):
 
 
 def choose_student(schedule):
-    """
-    Choose student from specs to into the student list of corresponding class in dictionary
+    """ Choose student from specs to into the student list of corresponding class in dictionary
+        Args:
+            schedule (dict): {Course: (ClassRoom, time, [Students])}
     """
     for a_class in schedule:
         student_list = a_class.specs
@@ -143,12 +145,12 @@ def choose_student(schedule):
         for student in student_list:
             if count >= schedule[a_class][0].capacity:
                 break
-            elif any(otherclass in schedule and schedule[otherclass][1] == time for otherclass in student.classes):
+            elif schedule[a_class][1] in student.taken: 
                 continue
             else:
                 schedule.get(a_class)[2].append(student)
                 count = count + 1
-                student.classes.append(a_class)
+                student.taken.append(schedule[a_class][1])
 
 
 def TeacherIsValid(teacherList, result, classToSchedule, timeToSchedule):
@@ -161,19 +163,12 @@ def TeacherIsValid(teacherList, result, classToSchedule, timeToSchedule):
         timeToSchedule: The time we're considering.
     """
     teacher = classToSchedule.teacher
-    classes = teacherList.get(teacher)
-    if (classes[0] not in result) and (classes[1] not in result):
+    classes = teacherList[teacher]
+    already_scheduled = [find_class(result, c) for c in classes if find_class(result, c)]
+    if not already_scheduled: 
         return True
-    elif classes[0] in result:
-        if result.get(classes[0])[1] == timeToSchedule:
-            return False
-        else:
-            return True
-    elif classes[1] in result:
-        if result.get(classes[1])[1] == timeToSchedule:
-            return False
-        else:
-            return True
+    else:
+        return (not any(result[c][1] == timeToSchedule for c in already_scheduled)) 
 
 
 def make_schedule(all_students, all_classes, all_rooms, ntimes, teacherList):
@@ -267,6 +262,10 @@ if __name__ == "__main__":
         for r in all_rooms:
             print("Room location:", r.idx, "Size:", r.capacity)
 
+        print("\nInput - Teacher information:")
+        for r in all_teachers:
+            print("ID:", r, "Classes:", all_teachers[r])
+            
         print("\nInput - Student Preferences")
         for s in all_students:
             print("ID:", s.idx, "Preferences:", [c for c in s.classes])

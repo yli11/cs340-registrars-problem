@@ -4,6 +4,7 @@ class Student:
        Args:
             idx : A unique label of a student
             classes: classes this student wants to take
+            taken: list of times this student is unavailable
 
     """
     def __init__(self,idx, classes=None):
@@ -12,6 +13,7 @@ class Student:
             self.classes = []
         else:
             self.classes = classes
+        self.taken = []
 
 class ClassRoom:
     """A classroom is a room with specific size
