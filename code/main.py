@@ -209,6 +209,7 @@ def make_schedule(all_students, all_classes, all_rooms, ntimes, teacherList):
                     index_room = index_room + 1
                     index_class = index_class + 1
                     assigned = True
+                    break
                 else:
                     copy_skipped_slots.put(possible_time)
             if skipped_slots.empty():
