@@ -142,7 +142,7 @@ def choose_student(schedule):
         time = schedule[a_class][1]
         count = 0
         for student in student_list:
-            if count > schedule[a_class][0].capacity:
+            if count >= schedule[a_class][0].capacity:
                 break
             elif any(otherclass in schedule and schedule[otherclass][1] == time for otherclass in student.classes):
                 continue
