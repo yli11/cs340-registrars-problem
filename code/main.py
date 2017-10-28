@@ -213,7 +213,8 @@ def make_schedule(all_students, all_classes, all_rooms, ntimes, teacherList):
                 else:
                     copy_skipped_slots.put(possible_time)
             if skipped_slots.empty():
-                skipped_slots = copy_skipped_slots
+                 while not copy_skipped_slots.empty():
+                    skipped_slots.put(copy_skipped_slots.get())
                 if not assigned:
                     while not TeacherIsValid(teacherList, result, all_classes[index_class], index_time):
                         # class name : location, time, students
