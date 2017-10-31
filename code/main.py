@@ -182,31 +182,32 @@ def make_schedule(all_students, all_classes, all_rooms, ntimes, teacherList):
     all_rooms.sort(key=lambda x: x.capacity, reverse=True)
 
     skipped_slots = Queue()
-    num_rooms = len(all_rooms) * ntimes
-    max_num_classes = min(len(all_classes), num_rooms)
+    nrooms = len(all_rooms)
+    max_num_classes = min(len(all_classes), len(all_rooms) * ntimes)
     index_class = 0
-    index_room = 0
-    index_time = 0
+    index_slot = 0
     result = {}
+
+    # index_slot represents the current slot in the while_loop
+    # index_room = index_slot//ntimes
+    # index_time = index_slot % ntimes+1
     while index_class < max_num_classes:
         if skipped_slots.empty():
-            while not TeacherIsValid(teacherList, result, all_classes[index_class], index_time):
+            while not TeacherIsValid(teacherList, result, all_classes[index_class], index_slot%ntimes+1):
                 # class name : location, time, students
-                skipped_slots.put(index_time)
-                index_time = (index_time + 1) % ntimes
-            result[all_classes[index_class]] = (all_rooms[index_room//ntimes], index_time, [])
-            index_time = (index_time + 1) % ntimes
-            index_room = index_room + 1
+                skipped_slots.put(index_slot)
+                index_slot = index_slot + 1
+            result[all_classes[index_class]] = (all_rooms[index_slot//ntimes], index_slot%ntimes+1, [])
+            index_slot = index_slot + 1
             index_class = index_class + 1
         else:
             copy_skipped_slots = Queue()
             assigned = False  # mark whether current class has been assigned
             while not skipped_slots.empty():
                 possible_time = skipped_slots.get_nowait()
-                if TeacherIsValid(teacherList, result, all_classes[index_class], possible_time):
-                        # class name : location, time, students
-                    result[all_classes[index_class]] = (all_rooms[index_room//ntimes], possible_time, [])
-                    index_room = index_room + 1
+                if TeacherIsValid(teacherList, result, all_classes[index_class], possible_time%ntimes+1):
+                        # class name : location, time, Students
+                    result[all_classes[index_class]] = (all_rooms[possible_time//ntimes], possible_time%ntimes+1, [])
                     index_class = index_class + 1
                     assigned = True
                     break
@@ -215,17 +216,17 @@ def make_schedule(all_students, all_classes, all_rooms, ntimes, teacherList):
             if skipped_slots.empty():
                 skipped_slots = copy_skipped_slots
                 if not assigned:
-                    while not TeacherIsValid(teacherList, result, all_classes[index_class], index_time):
+                    while not TeacherIsValid(teacherList, result, all_classes[index_class], index_slot%ntimes+1):
                         # class name : location, time, students
-                        skipped_slots.put(index_time)
-                        index_time = (index_time + 1) % ntimes
-                    result[all_classes[index_class]] = (all_rooms[index_room//ntimes], index_time, [])
-                    index_time = (index_time + 1) % ntimes
-                    index_room = index_room + 1
+                        skipped_slots.put(index_slot)
+                        index_slot = index_slot + 1
+                    result[all_classes[index_class]] = (all_rooms[index_slot//ntimes], index_slot%ntimes+1, [])
+                    index_slot = index_slot + 1
                     index_class = index_class + 1
             else:                               # recover skipped_slots
                 while not copy_skipped_slots.empty():
                     skipped_slots.put(copy_skipped_slots.get())
+        
     return result
 
 
