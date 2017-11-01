@@ -69,26 +69,31 @@ $skippedSlots\gets$ empty\\
         	}
 	$j\gets j+1$
 }
+
+\For{each scheduled class}{
+	choose students randomly \\and check whether there's time conflict for the student before adding
+}
 \Return $Schedule$
 }
 \end{algorithm}
 
 \section{Time Analysis}
 \subsection{Data Structure}
-The class requests of each student can be stored as a linked list. Constructing the lists in $S$ takes $O(n)$ and accessing a student's class choices takes $O(1)$. Furthermore, it takes $O(n)$ to traverse all class requests and initialize the array $K$. Sorting $K$ with the standard quicksort requires $O(n\log n)$.\par
+The class requests of each student can be stored as a linked list. Constructing the lists in $S$ takes $O(n)$ and accessing a student's class choices takes $O(1)$. Furthermore, it takes $O(m)$ to traverse all class requests and initialize the array $K$. Sorting $K$ with the standard quicksort requires $O(m\log m)$.\par
 The instructor information $P$ for classes can be stored in an array indexed by the classes. Thus initialization of $P$ takes $O(m)$, and retrieving the teacher of a given class $C_k$ takes $O(1)$. Similarly, classroom capacities can be stored in an array. Construction of $R$ takes $O(y)$ and sorting $R$ takes $O(y\log y)$.\par
 Information about teachers' assignments can be stored in a dictionary indexed by the teachers. Each time a class is scheduled, append the time $t_i$ to the teacher's assignments. Because each teacher teaches at most two classes, the size of a teacher's assignments cannot exceed $1$. Thus, checking whether $P_{C_k}$ has conflict during time $T_i$ takes $O(1)$. Construction of the dictionary takes $O(m)$.\par
 The skipped slots due to teachers' time conflicts can be stored in a FIFO queue. Therefore, pushing a slot into the queue, checking if it's empty, as well as popping its first element can be done in constant time. Since each teacher teaches at most two classes, each teacher can have at most $1$ conflict and so construction requires $O(m)$.\par
 To store the final schedule, we can create a dictionary of dictionaries. The outer dictionary has $r_j\in R$ as keys, and for each $r_j$ we construct a dictionary of size $x$, where the $i$-th value in the array indicates whether $r_j$ is available during time $t_i$. Constructing the nested dictionary takes $O(xy)$. Accessing or changing each value can be done in $O(1)$.\par
+Consider the time for choosing students for each class already been scheduled. Since in optimal situation all students and all class can be scheduled, thus in sum there're $4n$ students to be scheduled. The choosing students algorithm is based on built-in random selection, and thus takes $O(1)$ for each student. Further more, for each students, there's a need to check whether there're conflict in this student's schedule, which takes $O(1)$. In sum, choosing students have a $O(n)$ complexity.
 
 
 \subsection{Time Complexity}
-Using the data structures described above, we know that, in total, initialization requires \[n+n+n\log n+y+y\log y+m+m+xy = O(n\log n+y\log y+m +xy).\] By construction of the algorithm, the {\it while} loop terminates when all classrooms are $filled$ during all time periods or $2m$ classes are scheduled. Therefore, the nested {\it while} loops runs $\min(xy, 2m)$ times. Therefore, the overall time complexity of the algorithm is 
+Using the data structures described above, we know that, in total, initialization requires \[n+n+n\log n+y+y\log y+m+m+xy+n = O(m\log m+y\log y +xy+n).\] By construction of the algorithm, the {\it while} loop terminates when all classrooms are $filled$ during all time periods or $2m$ classes are scheduled. Therefore, the nested {\it while} loops runs $\min(xy, 2m)$ times. Therefore, the overall time complexity of the algorithm is 
 \begin{align*}
-T(n) &= O(n\log n+y\log y+m +xy)+O(\min(xy, 2m))\\
-& = O(n\log n+y\log y+m +xy)
+T(n) &= O(m\log m+y\log y +xy+n)+O(\min(xy, 2m))\\
+& = O(n+y\log y+m\log m +xy)
 \end{align*}
-Since $n$ dominates, we can say the time complexity of the algorithm is $O(n\log n)$.
+Since $n$ dominates, we can say the time complexity of the algorithm is $O(n)$.
 
 \section{Proof of Correctness}
 \underline{\textit{Proof of Termination.}} By time analysis we know the {\it while} loop runs at most $\min(xy, 2m)$ times. Each time a class is scheduled, $k, j$ are incremented by $1$. Furthermore, each time $j$ reaches $x$, $i$ is also incremented by $1$. Therefore, one of the loop preconditions will be violated as $i$ and $k$ keeps increasing. Hence, the algorithm terminates.
@@ -114,7 +119,13 @@ Greedy algorithm guarantees optimal result for each iteration, in this case the 
 \par Complications come mainly from restrictions on teachers and time slots. A simple corner case is that a teacher teaches two classes $c_i,c_j$, $c_i$ is more popular in $c_j$, but the algorithm automatically arrange them into the same time slot. A natural way to solve this conflict is to simply skip that time slot and move downward. However, this will result in an empty room at that time slot. To make full use of each room, a skipped room marker is needed. Whenever the algorithm skipped a room, the marker will keep track of that room, and arrange the next popular to that time slot.
 \par To conclude, greedy algorithm will give an near-optimal result and can be done in an acceptable time complexity.
  
-
-
+ \section{Experimental Analysis}
+ \subsection{Time Analysis:}
+As we stated above, our expectation on run time is $O(n)$. The result of our experiment shows that it indeeds have a linear run time. The algorithm is run on input generated by $\text{make\_random.pl}$ with different number of students. Specifically, input is generated with 50 rooms, 360 classes, 10 time 
+slots fixed and the variable is number of students ranged from 50 to 5000. For each set of parameters, we generated 5 different input. Then for every set, we compute an average time, and create a graph where the x-axis represents the number of students and y-axis represents run time. After curve fitting, we find that it's linear. To validate this mathematically, we compute the $\frac{\text{number of students}}{\text{run time}}$ for each set of input. The result shows that most of the ratio lies around $800$ and the standard deviation is $38.57$. Observe that the main deviation occurs when the student size is small, $ie$ when there're 1000 students. We trust that this deviation is caused by the less frequent occurrence  of conflicts when there're fewer students. We also repeat the experiment with 20 time slots, and curve fitting generates a similar result.
+\subsection{Quality Analysis:}
+Within each set of input, our algorithm shows a stable performance. For instance, for 5000 students, 10 times slots, 50 rooms, 360 classes, the standard deviation on $student$  $preference$  $value$ is 0.0271174. Furthermore, the most significant stand deviation occurs when there're 50 students, which is 1.2649, still implying a stable performance. 
+\\Then consider the performance on $student$ $preference$ $value$ for sets of input where number of rooms, classes time slots fixed and student size is the variable. We choose the lower bound of $student$ $preference$ $value$ for each set of input. First, consider there're 10 time slots, 50 rooms, 360 classes. For this set of input, our student size ranges from 1000 to 5000. Computing $\frac{\text{student preference value}}{\text{best Case Student Value}}$, we find that for different size of students, the ratio is almost the same, with a standard deviation of 0.0009. Thus, the average of these ratios can represent the performance of our algorithm on these set of input. With an average of $0.86308125$, our algorithm can arrange $86\%$ of students for their preferred classes. Then we repeat the experiment on different sets of input with 20 time slots, 50 rooms, 360 classes, and again student size ranges from 1000 to 5000. For these set of data, we apply the same analysis strategy and get an average of $0.93096875$ ratio. This ratio means that for 20 time slots, 50 rooms, 360 classes, we can arrange $93\%$ of students for their preferred classes.\\
+\\We think the difference between the two different ratios result from different number of time slots. For the second set of data, there're 20 time slots, indicating more slots for classes and also a less occurrence of time conflicts. Under such a circumstance, our algorithm can arrange more classes and will thus generate a better performance.
 \end{document}
 
