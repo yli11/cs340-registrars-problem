@@ -25,53 +25,55 @@
 
 \section{Description}
 \subsection{Notation}
-%Before we start talking about our actual algorithm, since we have a lot of types of data in this problem, we'd like to denote them to make the paper be more readable and concise.\\
 Let $S$ be the set of students, with $|S|=n$. Each student will have a list of class requests, so let $l_{s_i}$ to represent the $i^{th}$ student's list of class requests. We denote the set of teachers by $P$ and its order by $m$. Let $C$ be the set of classes, and so we have $|C|=2m$ classes. Denote the set of classrooms by $R$, with $|R|=y$, and the set of time slots as $T$, with $|T|=x$. 
 \subsection{Algorithm Description}
 Given $S, P, C, R, T$, we determine a class schedule with following rule: schedule as many students as possible into each class in decreasing order of the class' popularity. \par 
-Start off by sorting the classes in decreasing order of popularity, which is defined by the number of students who signed up for each class. Sort the classrooms in decreasing order of capacity. 
-
-Then, we can begin pairing classes with classrooms and time periods. Starting with the most popular class $c_1$, we try scheduling this class in the biggest classroom $r_1$ during the first time slot $t_1$. Find the teacher $p_1$ who teaches $c_1$. If $p_1$ has no conflict during this time, put the class-room-time combination into the final schedule. Otherwise, add the assignment $(r_1, t_1)$ as a skipped slot and move on to the next time slot. Once this class is scheduled, mark both the teacher and classroom as unavailable during this time period. Repeat this process for the next most popular class in the next time slot, except that if there are previously skipped slots, we try scheduling the class to the first skipped slot first. Otherwise, try scheduling the class in the next largest classroom during its earliest time slot, checking for conflicts with teacher. When all time slots for a classroom has class assignments, we move on to the next largest classroom. Keep doing so until either all classrooms are filled at all times, or all $2m$ classes has been scheduled.\\
+Start off by sorting the classes in decreasing order of popularity. Sort the classrooms in decreasing order of capacity. \par
+Then, we can begin pairing classes with classrooms and time periods. Starting with the most popular class $c_1$, we try scheduling this class in the biggest classroom $r_1$ during its first available time slot $t_1$. Find the teacher $p_1$ who teaches $c_1$. If $p_1$ has no conflict during this time, put the class-room-time combination into the final schedule. Otherwise, add the (room, time) combination as a skipped slot and move on to the next slot. Once this class is scheduled, mark both the teacher and classroom as unavailable during this time period. Repeat this process for the next most popular class in the next time slot, except that if there are previously skipped slots, we try scheduling the class to the skipped slot(s) first. Otherwise, always try scheduling the class in the largest available classroom during its earliest available time slot, checking for conflicts with teacher. Keep doing so until either all classrooms are filled at all times, or all $2m$ classes has been scheduled.\par
+After all class time and location are settled for all classes, we proceed to select students for each class in the same order. Starting with the most popular class, as long as there are seats available in the classroom, we randomly select a student from those who signed up for this class. If the student has no conflict at the same time, pair the student with the class. If the student has a conflict, remove him/her from the pool and select another one. Repeat the process until either all seats are filled or all prospective students are considered.
 \section{Pseudocode}
 \begin{algorithm}[H]
 \SetKwFunction{Schedule}{Schedule}
 \SetKwProg{Fn}{Function}{}{}
 \Fn{\Schedule{S, P, C, R, T}}{
-\For{all $c\in C$}{Count the number of students who signed up for $c$}
 Sort $C$ in decreasing order of popularity.\\
 Sort $R$ in decreasing order of capacity.\\
-$k, j\gets 0$\\
+Compute the maximum number of classes that can be scheduled: $max\gets xy$.\\
+Let $k=0$ be the class we're scheduling.\\
+Let $i=0$ be the first available time slot in the largest available room.\\
 $skippedSlots\gets$ empty\\
- \While{$j < y$ and $k<2m$}{
- 	Choose classroom $R_j$\\
-	$i\gets 0$\\
-    \While{$i < x$  and $k<2m$}{
-    	Choose time $T_i$\\
- 	\uIf{skippedSlots is empty}{
-        	\uIf{ teacher $P_{C_k}$ who teaches $C_k$ is available in $T_i$}{
-        		$Schedule[R_j][T_i]\gets C_k$\\
-		$i\gets i+1, k\gets k+1$\\
-		append $T_i$ to $occupied[P_{C_k}]$}
+ \While{$i < \min \{2m, max\}$}{
+ 	\uIf{$skippedSlots$ is empty}{
+	        	\While{ teacher $P_{C_k}$ who teaches $C_k$ is not available during $T_i$}{
+        			Put $i$ in $skippedSlots$\\
+			$i\gets i+1$}
+		Schedule class $C_k$ in room $R_{i}$ at time $T_{i}$.}
         	\uElse{
-        		append $(R_j, T_i)$ to $skippedSlots$\\
-		$i\gets i+1$
-    		  }
-       	 }
-	 \uElse{
-	   pop the first element in $skippedSlots$\\
-	   \uIf{ teacher $P_{C_k}$ has a conflict with the skipped slot}{
-	    push the slot back to $skippedSlots$\\
-	    repeat lines $18-24$
-	   }\uElse{
-	   	$Schedule[skippedSlot]\gets C_k$\\
-		$k\gets k+1$}
-         }
+		\While{$skippedSlots$ is not empty }{
+	   		Pop $j$ from $skippedSlots$\\
+	   		\uIf{ teacher $P_{C_k}$ has a conflict with the skipped slot}{
+	    			Push the slot back to $skippedSlots$}
+	   		\uElse{
+				Schedule class $C_k$ in room $R_{i}$ time $T_{j}$.\\
+				\textbf{break}
+			}
+		}
+		\uIf { $skippedSlots$ is empty and $C_k$ hasn't been scheduled}{
+			Try scheduling $C_k$ at slot $i$, checking conflicts with teacher
+		}
         	}
-	$j\gets j+1$
-}
+	$k\gets k+1$
+	}
+
 
 \For{each scheduled class}{
-	choose students randomly \\and check whether there's time conflict for the student before adding
+	\While {the classroom is not full and not all potential students are checked}{
+		Choose a random student from the pool of prospective students
+	\uIf{ student has another class at this time}{
+		Go to the next student}
+	\uElse{
+		Schedule this student for the class}
+	}
 }
 \Return $Schedule$
 }
