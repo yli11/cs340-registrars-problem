@@ -61,3 +61,11 @@ Output format
 2. number of major & minor students
 3. class level (higher level classes in smaller classrooms)
 4. department info (allow conflicts across categories SO, HU, NS)
+
+### presentation guide
+1. what is the design of our algorithm (description, pseudo code, time complexity)
+2. how we get the time complexity, talk about data structure
+3. additional constraints.
+4. experimental analysis
+5. run the code
+6. recommendation to haverford. (nope)
