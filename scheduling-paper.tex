@@ -25,9 +25,9 @@
 
 \section{Description}
 \subsection{Notation}
-Let $S$ be the set of students, with $|S|=n$. Each student will have a list of class requests, so let $l_{s_i}$ to represent the $i^{th}$ student's list of class requests. We denote the set of teachers by $P$ and its order by $m$. Let $C$ be the set of classes, and so we have $|C|=2m$ classes. Denote the set of classrooms by $R$, with $|R|=y$, and the set of time slots as $T$, with $|T|=x$. 
+Let $S$ be the set of students, with $|S|=s$. Each student will have a list of class requests, so let $l_{s_i}$ to represent the $i^{th}$ student's list of class requests. We denote the set of teachers by $P$ and its cardinality by $|P|=p$. Let $C$ be the set of classes, and so we have $|C|=c$ classes. Denote the set of classrooms by $R$, with $|R|=r$, and the set of time slots as $T$, with $|T|=t$. 
 \subsection{Algorithm Description}
-Given $S, P, C, R, T$, we determine a class schedule with following rule: schedule as many students as possible into each class in decreasing order of the class' popularity. \par 
+Given $S, P, C, R, T$, we determine a class schedule with following rule: schedule as many students as possible into each class in decreasing order of the class' popularity, defined by the number of students hoping to take this class. \par 
 Start off by sorting the classes in decreasing order of popularity. Sort the classrooms in decreasing order of capacity. \par
 Then, we can begin pairing classes with classrooms and time periods. Starting with the most popular class $c_1$, we try scheduling this class in the biggest classroom $r_1$ during its first available time slot $t_1$. Find the teacher $p_1$ who teaches $c_1$. If $p_1$ has no conflict during this time, put the class-room-time combination into the final schedule. Otherwise, add the (room, time) combination as a skipped slot and move on to the next slot. Once this class is scheduled, mark both the teacher and classroom as unavailable during this time period. Repeat this process for the next most popular class in the next time slot, except that if there are previously skipped slots, we try scheduling the class to the skipped slot(s) first. Otherwise, always try scheduling the class in the largest available classroom during its earliest available time slot, checking for conflicts with teacher. Keep doing so until either all classrooms are filled at all times, or all $2m$ classes has been scheduled.\par
 After all class time and location are settled for all classes, we proceed to select students for each class in the same order. Starting with the most popular class, as long as there are seats available in the classroom, we randomly select a student from those who signed up for this class. If the student has no conflict at the same time, pair the student with the class. If the student has a conflict, remove him/her from the pool and select another one. Repeat the process until either all seats are filled or all prospective students are considered.
@@ -38,7 +38,7 @@ After all class time and location are settled for all classes, we proceed to sel
 \Fn{\Schedule{S, P, C, R, T}}{
 Sort $C$ in decreasing order of popularity.\\
 Sort $R$ in decreasing order of capacity.\\
-Compute the maximum number of classes that can be scheduled: $max\gets xy$.\\
+Compute the maximum number of classes that can be scheduled: $max\gets rt$.\\
 Let $k=0$ be the class we're scheduling.\\
 Let $i=0$ be the first available time slot in the largest available room.\\
 $skippedSlots\gets$ empty\\
@@ -81,15 +81,15 @@ $skippedSlots\gets$ empty\\
 
 \section{Time Analysis}
 \subsection{Data Structure}
-The class requests of each student can be stored as a linked list. Constructing the lists in $S$ takes $O(n)$ and accessing a student's class choices takes $O(1)$. Furthermore, it takes $O(m)$ to traverse all class requests and initialize the array $K$. Sorting $K$ with the standard quicksort requires $O(m\log m)$.\par
-The instructor information $P$ for classes can be stored in an array indexed by the classes. Thus initialization of $P$ takes $O(m)$, and retrieving the teacher of a given class $C_k$ takes $O(1)$. Similarly, classroom capacities can be stored in an array. Construction of $R$ takes $O(y)$ and sorting $R$ takes $O(y\log y)$.\par
-Information about teachers' assignments can be stored in a dictionary indexed by the teachers. Each time a class is scheduled, append the time $t_i$ to the teacher's assignments. Because each teacher teaches at most two classes, the size of a teacher's assignments cannot exceed $1$. Thus, checking whether $P_{C_k}$ has conflict during time $T_i$ takes $O(1)$. Construction of the dictionary takes $O(m)$.\par
-The skipped slots due to teachers' time conflicts can be stored in a FIFO queue. Therefore, pushing a slot into the queue, checking if it's empty, as well as popping its first element can be done in constant time. Since each teacher teaches at most two classes, each teacher can have at most $1$ conflict and so construction requires $O(m)$.\par
-To store the final schedule, we can create a dictionary of dictionaries. The outer dictionary has $r_j\in R$ as keys, and for each $r_j$ we construct a dictionary of size $x$, where the $i$-th value in the array indicates whether $r_j$ is available during time $t_i$. Constructing the nested dictionary takes $O(xy)$. Accessing or changing each value can be done in $O(1)$.\par
-Consider the time for choosing students for each class already been scheduled. Since in optimal situation all students and all class can be scheduled, thus in sum there're $4n$ students to be scheduled. The choosing students algorithm is based on built-in random selection, and thus takes $O(1)$ for each student. Further more, for each students, there's a need to check whether there're conflict in this student's schedule, which takes $O(1)$. In sum, choosing students have a $O(n)$ complexity.
+The class requests of each student can be stored as an array. Constructing the lists in $S$ takes $O(s)$ and accessing a student's class choices takes $O(1)$. Furthermore, it takes $O(c)$ to assign each class a popularity. Sorting classes by popularity with the standard quicksort requires $O(c\log c)$.\par
+The instructor information $P$ for classes can be stored in an array indexed by the classes. Thus initialization of $P$ takes $O(p)$, and retrieving the teacher of a given class $C_k$ takes $O(1)$. Similarly, classroom capacities can be stored in an array. Construction of $R$ takes $O(r)$ and sorting $R$ takes $O(r\log r)$.\par
+Information about teachers' assignments can be stored in an array indexed by the teachers, which takes $O(p)$ to initialize. Each time a class is scheduled, append the time $t_i$ to the teacher's assignments. Because each teacher teaches at most two classes, the size of each teacher's assignments cannot exceed $2$. Thus, checking whether $P_{C_k}$ has conflict during time $T_i$ takes $O(1)$.\par
+The skipped slots due to teachers' time conflicts can be stored in a FIFO queue. Therefore, pushing a slot into the queue, checking if it's empty, as well as popping its first element can be done in constant time. Since each teacher teaches at most two classes, each teacher can have at most $1$ conflict and so construction requires $O(p)$.\par
+To store the final schedule, we can create an array of size $rt$, where the $i$-th value in the array indicates the class assignment in room $\lfloor i / t\rfloor$ during time $(i\mod t)$. Initialization of the array takes $O(rt)$. Accessing or changing each value can be done in $O(1)$.\par
+Consider the time for choosing students for each class already been scheduled. Since in optimal situation all students and all class can be scheduled, thus in sum there're $4n$ students to be scheduled. The choosing students algorithm is based on built-in random selection, and thus takes $O(1)$ for each student. Further more, for each students, there's a need to check whether the class time conflicts with this student's existing schedule, which takes $O(1)$. In total, choosing students have a $O(s)$ complexity.
 
 
-\subsection{Time Complexity}
+\subsection{Time Complexity} % Redo this.
 Using the data structures described above, we know that, in total, initialization requires \[n+n+n\log n+y+y\log y+m+m+xy+n = O(m\log m+y\log y +xy+n).\] By construction of the algorithm, the {\it while} loop terminates when all classrooms are $filled$ during all time periods or $2m$ classes are scheduled. Therefore, the nested {\it while} loops runs $\min(xy, 2m)$ times. Therefore, the overall time complexity of the algorithm is 
 \begin{align*}
 T(n) &= O(m\log m+y\log y +xy+n)+O(\min(xy, 2m))\\
