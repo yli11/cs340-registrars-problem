@@ -37,9 +37,12 @@ class Course:
             teacher: The one who teaches this class
             specs: Students who will take this class
     """
-    def __init__(self,name,teacher, specs=None):
+    def __init__(self,name,teacher, specs=None, dept="", level=0, core=False):
         self.name = name
         self.teacher = teacher
+        self.dept = dept
+        self.level = level
+        self.is_core = core
         if specs is None:
             self.specs = []
         else:
