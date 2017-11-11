@@ -42,14 +42,18 @@ Output format
 
 ### Tentative Constraints
 
-1. Must schedule core classes for each department
-2. Assign priority to students according to class year
-3. Assign popularity to time slots. Schedule popular class at more popular times.
+1. Must schedule core classes for each department -- randomly choose two core classes from each level from each department.(we need to parse department)
+2. Assign popularity to time slots. Schedule popular class at more popular times. -- we sort time slots table based on the popularity of time slot, and we put the time slots with high priority before time slots with low priority.
+3. class times overlap: all_times: an array, each time represented by a tuple (start, end, a-list-of-days).  we need a class times slot table.
+5. Teachers have personal conflicts - an additioal time attribute in teacher class (using array), and modify teach is valid function in the main function based on that.
+8. Lectures vs. Labs (1 class can have multiple lab sections, but lab runs only once a week) -- some classes will have labs,labs always take 3 hours, which means it will take two consecutive time slots. And we assume the student take that course must take lab.
+
+2. Assign priority to students according to class year --randomly assign a priority number to student as a weight. So when choosing student, we just weigh student by their priority. --in doubt
+6. Classes have prerequisites - these can be scheduled at the same time. --too hard
+
+
 4. Can have multiple potential teachers for the same course
-5. Teachers have personal conflicts
-6. Classes have prerequisites - these can be scheduled at the same time.
 7. Quarter classes vs. semester classes
-8. Lectures vs. Labs (1 class can have multiple lab sections, but lab runs only once a week)
 
 ### Available Info
 
@@ -57,3 +61,11 @@ Output format
 2. number of major & minor students
 3. class level (higher level classes in smaller classrooms)
 4. department info (allow conflicts across categories SO, HU, NS)
+
+### presentation guide
+1. what is the design of our algorithm (description, pseudo code, time complexity)
+2. how we get the time complexity, talk about data structure
+3. additional constraints.
+4. experimental analysis
+5. run the code
+6. recommendation to haverford. (nope)
