@@ -11,7 +11,8 @@ from components import ClassRoom, Student, Course
 
 # set max column width so that the list of enrolled students will not be cut off
 pd.set_option('max_colwidth', 100000000000)
-
+major_list = ["ANTH","ASTR", "PHYS", "BIOL", "CHEM", "ARCH", "CMSC", "COML", "EAST", "ECON", "ENGL", "ARTS", "FREN", "GERM", "HIST", "LING", "MATH", "MUSC", "PHIL", "POLS", "PSYC", "RELG", "SOCL", "SPAN", "EDUC", "ENVS"]
+major_count = {"ANTH": 23, "ASTR": 7, "PHYS": 39, "BIOL": 70,"CHEM": 57, "ARCH": 6, "CMSC": 45, "COML": 9, "EAST": 9, "ECON": 91, "ENGL": 59, "ARTS": 11, "FREN": 14, "GERM": 7, "HIST": 21, "LING": 15, "MATH": 45, "MUSC": 12, "PHIL": 24, "POLS": 54, "PSYC": 54, "RELG": 9, "SOCL": 7, "SPAN": 36, "EDUC": 18, "ENVS": 19}
 
 def read_prefs(filename):
     """ Parse preference lists input
