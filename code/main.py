@@ -116,6 +116,52 @@ def find_class(C, c_id):
     return False
 
 
+#we check whether two input time slots, t1 and t2 are conflict: if we have time conflict, we return true, otherwise, we return false. Need further test
+def time_conflict(t1, t2, time_list):
+    #test whether days are the same
+    #if len(time_list[t1][2]) != len(time_list[t2][2]):
+    #    return True
+    #else:
+    share_day = day_conflict(t1,t2,time_list)
+    if share_day :
+        #if t1.start >= t2.end, t2.start >= t1.end it must be overlapped
+        if (time_list[t1][0] >= time_list[t2][1]) or (time_list[t1][0] >= time_list[t2][1]):
+            return False
+        #if t1.start == t2.start, it must be overlapped
+        #elif (time_list[t1][0] == time_list[t2][0]) or (time_list[t1][1] == time_list[2][1]) :
+        #    return True
+        #if t1.start < t2.start
+        elif (time_list[t1][0] < time_list[t2][0]):
+            #if t2.end <= t1.start
+            if (time_list[t1][1] <= time_list[t2][0]):
+                return False
+            else:
+                return True
+        #if t1.start >= t2.start, and t1.start < t2.end. So wherever t1.end is, this is a conflict.
+        else:
+                return True
+    #if no shared day, must not have time conflict.
+    else:
+        return False
+    
+def day_conflict(t1,t2,time_list):
+    for i in range(len(time_list[t1][2])):
+        for j in range(len(time_list[t2][2])):
+            if time_list[t1][2][i] == time_list[t2][2][j]:
+                return True
+    return False
+
+#after we get the whole table, we will extract a time table only works for lab and art classes(discussion will be counted as normal class), and delete that slot in our class time slot-for constraint 5
+#warning: there exists some classes which last 2 hour and a half. I still consider those spots as normal classes. So, some of the ARTS are smaller than 3 hr. But we still consider them as lab.
+def lab_time_table(time_list):
+    lab_time = {}
+    for time_slot in list(time_list):
+        # if time slot is more than two and half hours, we consider it as a lab session
+        if time_list[time_slot][1] - time_list[time_slot][0] > 270:
+            lab_time[time_slot] = time_list[time_slot]
+            del time_list[time_slot]
+    return lab_time
+
 def print_schedule(schedule, fname):
     """ Output schedule using pandas
         Args:
@@ -160,6 +206,19 @@ def choose_student(schedule):
                 count = count + 1
                 student.taken.append(schedule[a_class][1])
 
+#still not be tested
+def assign_core(class_list):
+    core_count = {}
+    shuffle(class_list)
+    #initialize the core_count dictionary
+    for subject in major_list:
+        core_count[subject] = [2,2,2]
+    for course in class_list:
+        if course.dept in core_count:
+            if core_count[course.dept][course.level-1] != 0:
+                course.core = True
+                core_count[course.dept][course.level - 1] = core_count[course.dept][course.level - 1] - 1
+              
 
 def TeacherIsValid(teacherList, result, classToSchedule, timeToSchedule):
     """
