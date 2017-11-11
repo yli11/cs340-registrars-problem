@@ -151,16 +151,21 @@ def day_conflict(t1,t2,time_list):
                 return True
     return False
 
-#after we get the whole table, we will extract a time table only works for lab and art classes(discussion will be counted as normal class), and delete that slot in our class time slot-for constraint 5
+#after we get the whole table, we will extract a time table only works for lab and art classes(discussion will be counted as normal class), and delete that slot in our class time slot to form a class_time_table. We will return a tuble with two dictionaries in it.  -for constraint 5
+#we will keep the original time_list intact to use in detect time_conflict (we don't need to have two table)
 #warning: there exists some classes which last 2 hour and a half. I still consider those spots as normal classes. So, some of the ARTS are smaller than 3 hr. But we still consider them as lab.
-def lab_time_table(time_list):
+def seperate_time_table(time_list):
+    temp = deepcopy(time_list)
     lab_time = {}
-    for time_slot in list(time_list):
+    class_time = {}
+    for time_slot in time_list:
         # if time slot is more than two and half hours, we consider it as a lab session
         if time_list[time_slot][1] - time_list[time_slot][0] > 270:
             lab_time[time_slot] = time_list[time_slot]
-            del time_list[time_slot]
-    return lab_time
+        else:
+            class_time[time_slot] = time_list[time_slot]
+    return (lab_time,class_time)
+
 
 def print_schedule(schedule, fname):
     """ Output schedule using pandas
