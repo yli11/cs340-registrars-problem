@@ -35,14 +35,16 @@ class Course:
        Args:
             name : the unique name of a course
             teacher: The one who teaches this class
-            specs: Students who will take this class
+            specs: Students who will take this class, by defaul an empty list
+            dept: four-letter string represeting department number
     """
-    def __init__(self,name,teacher, specs=None, dept="", level=0, core=False):
+    def __init__(self,name,teacher, specs=None, dept="", level=0):
         self.name = name
         self.teacher = teacher
         self.dept = dept
         self.level = level
-        self.is_core = core
+        self.is_core = False
+        self.has_lab = False
         if specs is None:
             self.specs = []
         else:
