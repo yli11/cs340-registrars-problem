@@ -120,6 +120,9 @@ def read_extension_constraints(filename_rt, filename_c):
     df_class_info.columns = ['Class', 'Teacher', 'Subject', 'Level']
     all_classes = []
     classes_with_labs = []
+
+    # construct Course objects for lectures
+    # All labs don't have instructor ID, find them and put into a separate list
     try:
         for index, row in df_class_info.iterrows():
             # check for NaN, should be false if teacher is NaN
