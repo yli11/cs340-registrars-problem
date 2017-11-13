@@ -230,19 +230,22 @@ def build_time_table(time_list):
         start_h = int(time_list[time][0][:split_point_s])
         start_min = int(time_list[time][0][split_point_s+1:split_point_s+3])
         if time_list[time][0][-2] == "P":
-            start_h += 12
+            if start_h != 12:
+               start_h += 12
         time_list[time][0] = start_h * 100 + start_min
         #parse end time
         split_point_e = time_list[time][1].find(":")
         end_h = int(time_list[time][1][:split_point_e])
         end_min = int(time_list[time][1][split_point_e+1:split_point_e+3])
         if time_list[time][1][-2] == "P":
-            end_h += 12
+            if end_h += 12:
+                end_h += 12
         time_list[time][1] = end_h * 100 + end_min
         #parse day
+        day_list = []
         for char in time_list[time][2] :
             if char != " ":
-                day_list = day_list.append(char)
+                day_list.append(char)
         time_list[time][2] = day_list
 
 def time_conflict(t1, t2, time_list):
