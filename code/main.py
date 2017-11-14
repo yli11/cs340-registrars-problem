@@ -17,6 +17,7 @@ pd.set_option('max_colwidth', 100000000000)
 
 major_count = {"ANTH": 23, "ASTR": 7, "PHYS": 39, "BIOL": 70,"CHEM": 57, "ARCH": 6, "CMSC": 45, "COML": 9, "EAST": 9, "ECON": 91, "ENGL": 59, "ARTS": 11, "FREN": 14, "GERM": 7, "HIST": 21, "LING": 15, "MATH": 45, "MUSC": 12, "PHIL": 24, "POLS": 54, "PSYC": 54, "RELG": 9, "SOCL": 7, "SPAN": 36, "EDUC": 18, "ENVS": 19}
 
+
 def read_prefs(filename):
     """ Parse preference lists input
         Args:
@@ -50,6 +51,7 @@ def read_prefs(filename):
 
     return all_students
 
+
 def read_extension_prefs(filename):
     """ Parse preference lists input
         Args:
@@ -58,8 +60,7 @@ def read_extension_prefs(filename):
             all_students (list): a list of Student objects with arrtibute `idx` (int) and `classes` (a list of int)
     """
     # read input file
-    df = pd.read_csv(filename, skiprows=1, sep="\t",
-                         names=['Student', 'Classes'])
+    df = pd.read_csv(filename, skiprows=1, sep="\t", names=['Student', 'Classes'])
 
     try:
         # put each student's class choices into a list
@@ -91,8 +92,8 @@ def read_extension_constraints(filename_rt, filename_c):
     df_raw = pd.read_csv(filename_rt, sep='\t', header=None)
 
     # process last two lines of constraint file 1
-    num_classes = int(df_raw[df_raw[0] == "Classes"].iloc[:,1])
-    num_profs = int(df_raw[df_raw[0] == "Teachers"].iloc[:,1])
+    num_classes = int(df_raw[df_raw[0] == "Classes"].iloc[:, 1])
+    num_profs = int(df_raw[df_raw[0] == "Teachers"].iloc[:, 1])
 
     # TODO: Process time
     r_start = df_raw[df_raw[0] == "Rooms"].index[0]
@@ -113,7 +114,6 @@ def read_extension_constraints(filename_rt, filename_c):
     # process room info
     df_rooms = df_raw[r_start+1:]
     all_rooms = [ClassRoom(row[0], int(row[1])) for index, row in df_rooms.iterrows()]
-
 
     # process class info from second file
     df_class_info = pd.read_csv(filename_c, sep='\t', header=None)
@@ -156,7 +156,8 @@ def read_constraints(filename):
             filename (string): name of the input file
         Returns:
             all_rooms (list): a list of Classroom objects, with attributes `idx` (str) and `capacity` (int)
-            all_classes (list): a list of Course objects, with attributes `name` (str), `teacher` (int), and `spec`s (empty list)
+            all_classes (list): a list of Course objects, with attributes `name` (str), `teacher` (int), and `spec`s
+            (empty list)
             ntimes (int): the number of non-overlapping time slots
             all_teachers (dict): {teacher_id (int): class_name (int)}
     """
@@ -225,7 +226,7 @@ def build_time_table(time_list):
     """ Convert format from string to 24h clock in order to detect time conlifcts"""
 
     for time in time_list:
-        #parse start time
+        # parse start time
         split_point_s = time_list[time][0].find(":")
         start_h = int(time_list[time][0][:split_point_s])
         start_min = int(time_list[time][0][split_point_s+1:split_point_s+3])
@@ -233,15 +234,15 @@ def build_time_table(time_list):
             if start_h != 12:
                start_h += 12
         time_list[time][0] = start_h * 100 + start_min
-        #parse end time
+        # parse end time
         split_point_e = time_list[time][1].find(":")
         end_h = int(time_list[time][1][:split_point_e])
         end_min = int(time_list[time][1][split_point_e+1:split_point_e+3])
         if time_list[time][1][-2] == "P":
-            if end_h += 12:
+            if end_h == 12:                       # used to be end_h+=12 which caused an error, need attention here
                 end_h += 12
         time_list[time][1] = end_h * 100 + end_min
-        #parse day
+        # parse day
         day_list = []
         for char in time_list[time][2] :
             if char != " ":
@@ -254,7 +255,7 @@ def time_conflict(t1, t2, time_list):
     """
     # test whether days are the same
     if any(day in time_list[t1][2] for day in time_list[t2][2]):
-        #if t1.start >= t2.end, t2.start >= t1.end it must be overlapped
+        # if t1.start >= t2.end, t2.start >= t1.end it must be overlapped
         if (time_list[t1][0] >= time_list[t2][1]) or (time_list[t1][0] >= time_list[t2][1]):
             return False
         elif (time_list[t1][0] < time_list[t2][0] and time_list[t1][1] <= time_list[t2][0]) or \
@@ -262,14 +263,17 @@ def time_conflict(t1, t2, time_list):
                 return False
         else:
             return True
-    #if no shared day, must not have time conflict.
+    # if no shared day, must not have time conflict.
     else:
         return False
 
 
-# after we get the whole table, we will extract a time table only works for lab and art classes(discussion will be counted as normal class), and delete that slot in our class time slot to form a class_time_table. We will return a tuble with two dictionaries in it.  -for constraint 5
+# after we get the whole table, we will extract a time table only works for lab and art classes(discussion will be
+# counted as normal class), and delete that slot in our class time slot to form a class_time_table. We will return a
+# tuple with two dictionaries in it.  -for constraint 5
 # we will keep the original time_list intact to use in detect time_conflict (we don't need to have two table)
-# warning: there exists some classes which last 2 hour and a half. I still consider those spots as normal classes. So, some of the ARTS are smaller than 3 hr. But we still consider them as lab.
+# warning: there exists some classes which last 2 hour and a half. I still consider those spots as normal classes.
+# So, some of the ARTS are smaller than 3 hr. But we still consider them as lab.
 def seperate_time_table(time_list):
     """
     """
@@ -334,7 +338,7 @@ def choose_student(schedule):
 def assign_core(class_list):
     core_count = {}
     shuffle(class_list)
-    #initialize the core_count dictionary
+    # initialize the core_count dictionary
     for subject in major_count:
         core_count[subject] = [2,2,2]
     for course in class_list:
