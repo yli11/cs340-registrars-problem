@@ -185,7 +185,7 @@ def write_classes_to_file(list_of_dicts, filename):
   f.close()
 
 if len(sys.argv) != 5:
-  print "Usage: " + sys.argv[0] + " <enrollment.csv> <student_prefs.txt> <room_time.txt> <class_dept_level.txt>"
+  print ("Usage: " + sys.argv[0] + " <enrollment.csv> <student_prefs.txt> <room_time.txt> <class_dept_level.txt>")
   exit(1) 
 list_of_dicts = get_data_list_of_dicts(sys.argv[1])
 write_prefs_to_file(list_of_dicts, sys.argv[2])
