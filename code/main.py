@@ -360,8 +360,11 @@ def TeacherIsValid(teacherList, result, classToSchedule, timeToSchedule):
     teacher = classToSchedule.teacher
     classes = teacherList[teacher]
     already_scheduled = [find_class(result, c) for c in classes if find_class(result, c)]
-    return (not any(result[c][1] == timeToSchedule for c in already_scheduled)) 
+    return (not any(result[c][1] == timeToSchedule for c in already_scheduled))
 
+
+def sort_class(all_classes):
+    return
 
 def make_schedule_basic(all_students, all_classes, all_rooms, ntimes, teacherList):
     # sort classes by popularity, sort classrooms by size
@@ -415,6 +418,10 @@ def make_schedule_basic(all_students, all_classes, all_rooms, ntimes, teacherLis
     return result
 
 
+def make_schedule_extension(all_classes, all_rooms, ntimes, teacherList):
+
+
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
@@ -438,7 +445,7 @@ if __name__ == "__main__":
         count_prefs(all_classes, all_students)
 
         # make schedule for basic version
-        schedule = make_schedule(all_students, all_classes, all_rooms, ntimes, all_teachers)
+        schedule = make_schedule_basic(all_students, all_classes, all_rooms, ntimes, all_teachers)
         choose_student(schedule)
         print_schedule(schedule, args.outfile)
         subprocess.call(["perl", "is_valid.pl", args.infiles[1], args.infiles[0], args.outfile])
