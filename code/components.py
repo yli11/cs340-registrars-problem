@@ -7,13 +7,14 @@ class Student:
             taken: list of times this student is unavailable
 
     """
-    def __init__(self,idx, classes=None):
+    def __init__(self, idx, classes=None):
         self.idx = idx
         if classes is None:
             self.classes = []
         else:
             self.classes = classes
         self.taken = []
+
 
 class ClassRoom:
     """A classroom is a room with specific size
@@ -22,7 +23,7 @@ class ClassRoom:
             capacity: the size of thie room
             
     """
-    def __init__(self,idx,size=0):
+    def __init__(self, idx, size=0):
         self.idx = idx
         self.capacity = size
 
@@ -38,7 +39,7 @@ class Course:
             specs: Students who will take this class, by defaul an empty list
             dept: four-letter string represeting department number
     """
-    def __init__(self,name,teacher, specs=None, dept="", level=0):
+    def __init__(self, name, teacher, specs=None, dept="", level=0):
         self.name = name
         self.teacher = teacher
         self.dept = dept
