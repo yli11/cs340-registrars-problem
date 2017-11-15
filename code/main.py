@@ -364,7 +364,7 @@ def TeacherIsValid(teacherList, result, classToSchedule, timeToSchedule):
 
 
 def sort_class(all_classes):
-    return
+    return 1
 
 def make_schedule_basic(all_students, all_classes, all_rooms, ntimes, teacherList):
     # sort classes by popularity, sort classrooms by size
@@ -418,47 +418,59 @@ def make_schedule_basic(all_students, all_classes, all_rooms, ntimes, teacherLis
     return result
 
 
-def make_schedule_extension(all_classes, all_rooms, ntimes, teacherList):
+def make_lab(lab, lab_time, lab_queue, teacherList, all_classes, all_room)
 
 
+def make_schedule_extension(all_classes, all_rooms, teacherList, time_list):
+    all_classes = sort_class(all_classes)
+    all_rooms.sort(key=lambda x: x.capacity, reverse=True)
+    lec_time, lab_time = seperate_time_table(time_list)
+    skipped_slots_lec = Queue()
+    skipped_slots_lab = Queue()
+    nrooms = len(all_rooms)
+    ntimes = len(lec_time)
+    max_num_classes = min(len(all_classes), len(all_rooms) * ntimes)
+    index_class = 0
+    index_lab = 0
+    index_slot = 0
+    result = {}
+    while index_class < max_num_classes:
+        if skipped_slots.empty():
+            # teacherList[all_classes[index_class].teacher][1] are time that have already been taken
+            while (index_slot % ntimes + 1) in teacherList[all_classes[index_class].teacher][1]:
+                # class name : location, time, students
+                skipped_slots.put(index_slot)
+                index_slot = index_slot + 1
+            result[all_classes[index_class]] = (all_rooms[index_slot // ntimes], index_slot % ntimes + 1, [])
+            index_slot = index_slot + 1
+        else:
+            copy_skipped_slots = Queue()
+            assigned = False  # mark whether current class has been assigned
+            while not skipped_slots.empty():
+                possible_time = skipped_slots.get_nowait()
+                if TeacherIsValid(teacherList, result, all_classes[index_class], possible_time % ntimes + 1):
+                    # class name : location, time, Students
+                    result[all_classes[index_class]] = (
+                    all_rooms[possible_time // ntimes], possible_time % ntimes + 1, [])
+                    assigned = True
+                    break
+                else:
+                    copy_skipped_slots.put(possible_time)
+            if skipped_slots.empty():
+                skipped_slots = copy_skipped_slots
+                if not assigned:
+                    while not TeacherIsValid(teacherList, result, all_classes[index_class], index_slot % ntimes + 1):
+                        # class name : location, time, students
+                        skipped_slots.put(index_slot)
+                        index_slot = index_slot + 1
+                    result[all_classes[index_class]] = (all_rooms[index_slot // ntimes], index_slot % ntimes + 1, [])
+                    index_slot = index_slot + 1
+            else:  # recover skipped_slots
+                while not copy_skipped_slots.empty():
+                    skipped_slots.put(copy_skipped_slots.get())
+        index_class = index_class + 1
 
-
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser(
-        description='Usage: python3 main.py <studentprefs.txt> <basic_constraints.txt> '
-                    '(<extension_constriants.txt>) (--extension)')
-    parser.add_argument('infiles', type=str, nargs='+',
-                        help='Name of input file(s). Assuming the first file contains preference lists, '
-                             'the second file contains basic constraints, the third one contains constraints for '
-                             'Haverford extension.')
-    parser.add_argument('--outfile', '-o', type=str, help='Name of output schedule')
-    parser.add_argument('--extension', action='store_true',
-                        help="whether allowing haverford extension, by default, run the basic version")
-    parser.add_argument('--test', action='store_true',
-                        help="print intermediate outputs")
-    args = parser.parse_args()
-
-    if not args.extension:
-        # read input
-        all_students = read_prefs(args.infiles[0])
-        ntimes, all_rooms, all_classes, all_teachers = read_constraints(args.infiles[1])
-        count_prefs(all_classes, all_students)
-
-        # make schedule for basic version
-        schedule = make_schedule_basic(all_students, all_classes, all_rooms, ntimes, all_teachers)
-        choose_student(schedule)
-        print_schedule(schedule, args.outfile)
-        subprocess.call(["perl", "is_valid.pl", args.infiles[1], args.infiles[0], args.outfile])
-
-    else:
-        # read input
-        all_students = read_extension_prefs(args.infiles[0])
-        all_times, all_rooms, all_classes, all_teachers = read_extension_constraints(args.infiles[1], args.infiles[2])
-        lab_time, class_time = seperate_time_table(all_times)
-        build_time_table(all_times)
-        count_prefs(all_classes, all_students)
-        assign_core(all_classes)
-
+    return result
 
 
 
