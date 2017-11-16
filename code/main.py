@@ -363,8 +363,14 @@ def TeacherIsValid(teacherList, result, classToSchedule, timeToSchedule):
     return (not any(result[c][1] == timeToSchedule for c in already_scheduled))
 
 
-def sort_class(all_classes):
-    return 1
+def sort_class(course):
+    weight = 0
+    if course.dept in major_count:
+        weight += major_count[course.dept] * 0.5
+    weight += 3*(5-course.level)
+    if course.is_core:
+        weight = weight * 2
+    return weight
 
 def make_schedule_basic(all_students, all_classes, all_rooms, ntimes, teacherList):
     # sort classes by popularity, sort classrooms by size
