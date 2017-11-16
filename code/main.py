@@ -15,7 +15,7 @@ from components import ClassRoom, Student, Course
 pd.set_option('max_colwidth', 100000000000)
 
 
-major_count = {"ANTH": 23, "ASTR": 7, "PHYS": 39, "BIOL": 70,"CHEM": 57, "ARCH": 6, "CMSC": 45, "COML": 9, "EAST": 9, "ECON": 91, "ENGL": 59, "ARTS": 11, "FREN": 14, "GERM": 7, "HIST": 21, "LING": 15, "MATH": 45, "MUSC": 12, "PHIL": 24, "POLS": 54, "PSYC": 54, "RELG": 9, "SOCL": 7, "SPAN": 36, "EDUC": 18, "ENVS": 19}
+major_count = {"ANTH": 23, "ASTR": 7, "PHYS": 39, "BIOL": 70, "CHEM": 57, "ARCH": 6, "CMSC": 45, "COML": 9, "EAST": 9, "ECON": 91, "ENGL": 59, "ARTS": 11, "FREN": 14, "GERM": 7, "HIST": 21, "LING": 15, "MATH": 45, "MUSC": 12, "PHIL": 24, "POLS": 54, "PSYC": 54, "RELG": 9, "SOCL": 7, "SPAN": 36, "EDUC": 18, "ENVS": 19}
 
 
 def read_prefs(filename):
@@ -33,14 +33,18 @@ def read_prefs(filename):
     classes = defaultdict(list)
     try:
         for i in df_raw['Student']:
-            classes[int(i)].append(int(df_raw.loc[df_raw['Student'] == i, 'Class1']))
-            classes[int(i)].append(int(df_raw.loc[df_raw['Student'] == i, 'Class2']))
-            classes[int(i)].append(int(df_raw.loc[df_raw['Student'] == i, 'Class3']))
-            classes[int(i)].append(int(df_raw.loc[df_raw['Student'] == i, 'Class4']))
+            classes[int(i)].append(
+                int(df_raw.loc[df_raw['Student'] == i, 'Class1']))
+            classes[int(i)].append(
+                int(df_raw.loc[df_raw['Student'] == i, 'Class2']))
+            classes[int(i)].append(
+                int(df_raw.loc[df_raw['Student'] == i, 'Class3']))
+            classes[int(i)].append(
+                int(df_raw.loc[df_raw['Student'] == i, 'Class4']))
     except:
         print("Something's wrong while reading student preferences. Please check input format.")
-        print("The student",i,'went wrong.')
-        print("His/hers prefereces are", df_raw.loc[i-1])
+        print("The student", i, 'went wrong.')
+        print("His/hers prefereces are", df_raw.loc[i - 1])
         print("Here's what we've got when tring to get Class 1:")
         print(df_raw.loc[df_raw['Student'] == i, 'Class1'])
         exit(-1)
@@ -50,6 +54,53 @@ def read_prefs(filename):
     all_students = [Student(i, df_students.loc[i - 1, 'Classes']) for i in df_students['Student']]
 
     return all_students
+
+
+def read_constraints(filename):
+    """ Parse constraints info
+        Args:
+            filename (string): name of the input file
+        Returns:
+            all_rooms (list): a list of Classroom objects, with attributes `idx` (str) and `capacity` (int)
+            all_classes (list): a list of Course objects, with attributes `name` (str), `teacher` (int), and `spec`s
+            (empty list)
+            ntimes (int): the number of non-overlapping time slots
+            all_teachers (dict): {teacher_id (int): class_name (int)}
+    """
+    # read file
+    df_raw = pd.read_csv(filename, sep='\t', header=None)
+
+    # record the number of time slots
+    ntimes = int(df_raw.loc[0, 2])
+
+    # parse remaining info into two parts, one about rooms, the other about
+    # teachers
+    r_start = df_raw[df_raw[0] == "Rooms"].index[0]
+    t_start = df_raw[df_raw[0] == "Teachers"].index[0]
+    df_rooms = df_raw[r_start:t_start - 2]
+    new_header = df_rooms.iloc[0]
+    nrooms = new_header[1]
+    df_rooms = df_rooms[1:]
+    df_rooms.columns = new_header
+    df_teachers = df_raw.loc[t_start:]
+    new_header = df_teachers.iloc[0]
+    nteachers = new_header[1]
+    df_teachers = df_teachers[1:]
+    df_teachers.columns = new_header
+
+    # construct ClassRoom and Course objects
+    all_rooms = [ClassRoom(r, int(
+        df_rooms.loc[df_rooms['Rooms'] == r, nrooms])) for r in df_rooms['Rooms']]
+    all_classes = [Course(int(c), int(df_teachers.loc[df_teachers['Teachers'] == c, nteachers])) for c in
+                   df_teachers['Teachers']]
+    all_teachers = {}
+
+    # construct teacher list
+    for t in range(1, int(nteachers) + 1):
+        all_teachers[t] = list(map(int, df_teachers.loc[df_teachers[
+                               nteachers] == str(t), 'Teachers'].tolist()))
+
+    return ntimes, all_rooms, all_classes, all_teachers
 
 
 def read_extension_prefs(filename):
@@ -102,18 +153,19 @@ def read_extension_constraints(filename_rt, filename_c):
     all_times = {}
     for index, times in df_times.iterrows():
         row = times.to_string(header=False, index=False)
-        row = row[row.find("\n")+2:]
-        split_1 = row.find("M")+1
+        row = row[row.find("\n"):].strip()
+        split_1 = row.find("M") + 1
         start = row[:split_1]
-        row = row[split_1+1:].strip()
+        row = row[split_1 + 1:].strip()
         split_2 = row.find("M")
-        end = row[:split_2+1]
-        days = row[split_2+2:]
+        end = row[:split_2 + 1]
+        days = row[split_2 + 2:]
         all_times[index] = [start, end, days]
 
     # process room info
-    df_rooms = df_raw[r_start+1:]
-    all_rooms = [ClassRoom(row[0], int(row[1])) for index, row in df_rooms.iterrows()]
+    df_rooms = df_raw[r_start + 1:]
+    all_rooms = [ClassRoom(row[0], int(row[1]))
+                 for index, row in df_rooms.iterrows()]
 
     # process class info from second file
     df_class_info = pd.read_csv(filename_c, sep='\t', header=None)
@@ -122,18 +174,22 @@ def read_extension_constraints(filename_rt, filename_c):
     classes_with_labs = []
 
     # construct Course objects for lectures
-    # All labs don't have instructor ID, find them and put into a separate list
+    # TODO: All labs don't have instructor ID, find them and put into a separate list
     try:
         for index, row in df_class_info.iterrows():
             # check for NaN, should be false if teacher is NaN
             if row['Teacher'] != row['Teacher']:
                 classes_with_labs.append(int(row['Class']))
             else:
-                all_classes.append(Course(int(row['Class']), int(row['Teacher']), None, row['Subject'], int(row['Level'])))
+                all_classes.append(Course(int(row['Class']), int(
+                    row['Teacher']), None, row['Subject'], int(row['Level'])))
     except:
         print("When trying to process the following class, there is an error:")
         print(row, index)
-
+        exit(-1)
+    
+    # TODO: add has_lab attribute
+    """
     try:
         for i in classes_with_labs:
             c = find_class(all_classes, i)
@@ -141,57 +197,15 @@ def read_extension_constraints(filename_rt, filename_c):
     except:
         print("Possibly can't find this class")
         print(i)
+    """
 
-    # process teacher info
+    # TODO: process teacher info
     all_teachers = {}
     for t in range(1, int(num_profs) + 1):
-        all_teachers[t] = list(map(int, df_class_info.loc[df_class_info['Teacher'] == float(t), 'Teacher'].tolist()))
+        all_teachers[t] = list(map(int, df_class_info.loc[df_class_info[
+                               'Teacher'] == float(t), 'Teacher'].tolist()))
 
     return all_times, all_rooms, all_classes, all_teachers
-
-
-def read_constraints(filename):
-    """ Parse constraints info
-        Args:
-            filename (string): name of the input file
-        Returns:
-            all_rooms (list): a list of Classroom objects, with attributes `idx` (str) and `capacity` (int)
-            all_classes (list): a list of Course objects, with attributes `name` (str), `teacher` (int), and `spec`s
-            (empty list)
-            ntimes (int): the number of non-overlapping time slots
-            all_teachers (dict): {teacher_id (int): class_name (int)}
-    """
-    # read file
-    df_raw = pd.read_csv(filename, sep='\t', header=None)
-
-    # record the number of time slots
-    ntimes = int(df_raw.loc[0, 2])
-
-    # parse remaining info into two parts, one about rooms, the other about teachers
-    r_start = df_raw[df_raw[0] == "Rooms"].index[0]
-    t_start = df_raw[df_raw[0] == "Teachers"].index[0]
-    df_rooms = df_raw[r_start:t_start - 2]
-    new_header = df_rooms.iloc[0]
-    nrooms = new_header[1]
-    df_rooms = df_rooms[1:]
-    df_rooms.columns = new_header
-    df_teachers = df_raw.loc[t_start:]
-    new_header = df_teachers.iloc[0]
-    nteachers = new_header[1]
-    df_teachers = df_teachers[1:]
-    df_teachers.columns = new_header
-
-    # construct ClassRoom and Course objects
-    all_rooms = [ClassRoom(r, int(df_rooms.loc[df_rooms['Rooms'] == r, nrooms])) for r in df_rooms['Rooms']]
-    all_classes = [Course(int(c), int(df_teachers.loc[df_teachers['Teachers'] == c, nteachers])) for c in
-                   df_teachers['Teachers']]
-    all_teachers = {}
-
-    # construct teacher list
-    for t in range(1, int(nteachers) + 1):
-        all_teachers[t] = list(map(int, df_teachers.loc[df_teachers[nteachers] == str(t), 'Teachers'].tolist()))
-
-    return ntimes, all_rooms, all_classes, all_teachers
 
 
 def count_prefs(C, S):
@@ -203,7 +217,8 @@ def count_prefs(C, S):
     for s in S:
         for c_id in s.classes:
             a_class = find_class(C, c_id)
-            a_class.specs.append(s)
+            if a_class and s not in a_class.specs:
+                a_class.specs.append(s)
             # print('Adding student ' + str(s.idx) + ' to class ' + str(a_class.name))
 
 
@@ -223,44 +238,45 @@ def find_class(C, c_id):
 
 
 def build_time_table(time_list):
-    """ Convert format from string to 24h clock in order to detect time conlifcts"""
+    """ Convert format from string to 24h clock in order to detect time conlifcts """
 
     for time in time_list:
         # parse start time
         split_point_s = time_list[time][0].find(":")
         start_h = int(time_list[time][0][:split_point_s])
-        start_min = int(time_list[time][0][split_point_s+1:split_point_s+3])
+        start_min = int(time_list[time][0][split_point_s + 1:split_point_s + 3])
         if time_list[time][0][-2] == "P":
             if start_h != 12:
-               start_h += 12
+                start_h += 12
         time_list[time][0] = start_h * 100 + start_min
         # parse end time
         split_point_e = time_list[time][1].find(":")
         end_h = int(time_list[time][1][:split_point_e])
-        end_min = int(time_list[time][1][split_point_e+1:split_point_e+3])
+        end_min = int(time_list[time][1][split_point_e + 1:split_point_e + 3])
         if time_list[time][1][-2] == "P":
-            if end_h == 12:                       # used to be end_h+=12 which caused an error, need attention here
+            if end_h != 12:
                 end_h += 12
         time_list[time][1] = end_h * 100 + end_min
         # parse day
+        """
         day_list = []
         for char in time_list[time][2] :
             if char != " ":
                 day_list.append(char)
         time_list[time][2] = day_list
+        """
+        time_list[time][2] = time_list[time][2].split()
 
 def time_conflict(t1, t2, time_list):
-    """
-    Return true if two time slots t1 and t2 overlaps, false otherwise
-    """
+    """ Return true if two time slots t1 and t2 overlaps, false otherwise """
     # test whether days are the same
     if any(day in time_list[t1][2] for day in time_list[t2][2]):
         # if t1.start >= t2.end, t2.start >= t1.end it must be overlapped
         if (time_list[t1][0] >= time_list[t2][1]) or (time_list[t1][0] >= time_list[t2][1]):
             return False
         elif (time_list[t1][0] < time_list[t2][0] and time_list[t1][1] <= time_list[t2][0]) or \
-            (time_list[t2][0] < time_list[t1][0] and time_list[t2][1] <= time_list[t1][0]):
-                return False
+                (time_list[t2][0] < time_list[t1][0] and time_list[t2][1] <= time_list[t1][0]):
+            return False
         else:
             return True
     # if no shared day, must not have time conflict.
@@ -268,15 +284,8 @@ def time_conflict(t1, t2, time_list):
         return False
 
 
-# after we get the whole table, we will extract a time table only works for lab and art classes(discussion will be
-# counted as normal class), and delete that slot in our class time slot to form a class_time_table. We will return a
-# tuple with two dictionaries in it.  -for constraint 5
-# we will keep the original time_list intact to use in detect time_conflict (we don't need to have two table)
-# warning: there exists some classes which last 2 hour and a half. I still consider those spots as normal classes.
-# So, some of the ARTS are smaller than 3 hr. But we still consider them as lab.
 def seperate_time_table(time_list):
-    """
-    """
+    """ Separate lab times and lecture times """
 
     temp = deepcopy(time_list)
     lab_time = {}
@@ -307,7 +316,8 @@ def print_schedule(schedule, fname):
         dict_schedule["Room"].append(schedule[course][0].idx)
         dict_schedule["Teacher"].append(str(course.teacher))
         dict_schedule["Time"].append(str(schedule[course][1]))
-        dict_schedule["Students"].append(' '.join([str(s.idx) for s in sorted(schedule[course][2], key=lambda t: t.idx)]))
+        dict_schedule["Students"].append(' '.join(
+            [str(s.idx) for s in sorted(schedule[course][2], key=lambda t: t.idx)]))
 
     # construct a DataFrame from dictionary and print schedule
     df_schedule = pd.DataFrame(dict_schedule)
@@ -337,15 +347,17 @@ def choose_student(schedule):
 
 def assign_core(class_list):
     core_count = {}
-    shuffle(class_list)
+    class_list.sort(key=lambda x: len(x.specs), reverse=True)
     # initialize the core_count dictionary
     for subject in major_count:
-        core_count[subject] = [2,2,2]
+        core_count[subject] = [2, 2, 2]
     for course in class_list:
-        if course.dept in core_count:
-            if core_count[course.dept][course.level-1] != 0:
+        if course.dept == "WRPR":
+            course.is_core = True
+        elif course.dept in core_count and course.level > 0 and course.level < 4:
+            if core_count[course.dept][course.level - 1] != 0:
                 course.is_core = True
-                core_count[course.dept][course.level - 1] = core_count[course.dept][course.level - 1] - 1
+                core_count[course.dept][course.level -1] = core_count[course.dept][course.level - 1] - 1
               
 
 def TeacherIsValid(teacherList, result, classToSchedule, timeToSchedule):
@@ -367,7 +379,7 @@ def sort_class(course):
     weight = 0
     if course.dept in major_count:
         weight += major_count[course.dept] * 0.5
-    weight += 3*(5-course.level)
+    weight += 3 * (5 - course.level)
     if course.is_core:
         weight = weight * 2
     return weight
@@ -480,7 +492,42 @@ def make_schedule_extension(all_classes, all_rooms, teacherList, time_list):
 
 
 
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(
+        description='Usage: python3 main.py <studentprefs.txt> <basic_constraints.txt> '
+                    '(<extension_constriants.txt>) (--extension)')
+    parser.add_argument('infiles', type=str, nargs='+',
+                        help='Name of input file(s). Assuming the first file contains preference lists, '
+                             'the second file contains basic constraints, the third one contains constraints for '
+                             'Haverford extension.')
+    parser.add_argument('--outfile', '-o', type=str,
+                        help='Name of output schedule')
+    parser.add_argument('--extension', action='store_true',
+                        help="whether allowing haverford extension, by default, run the basic version")
+    parser.add_argument('--test', action='store_true',
+                        help="print intermediate outputs")
+    args = parser.parse_args()
 
+    if not args.extension:
+        # read input
+        all_students = read_prefs(args.infiles[0])
+        ntimes, all_rooms, all_classes, all_teachers = read_constraints(args.infiles[1])
+        count_prefs(all_classes, all_students)
+
+        # make schedule for basic version
+        schedule = make_schedule_basic(all_students, all_classes, all_rooms, ntimes, all_teachers)
+        choose_student(schedule)
+        print_schedule(schedule, args.outfile)
+        subprocess.call(["perl", "is_valid.pl", args.infiles[1], args.infiles[0], args.outfile])
+
+    else:
+        # read input
+        all_students = read_extension_prefs(args.infiles[0])
+        all_times, all_rooms, all_classes, all_teachers = read_extension_constraints(args.infiles[1], args.infiles[2])
+        build_time_table(all_times)
+        lab_time, class_time = seperate_time_table(all_times)
+        count_prefs(all_classes, all_students)
+        assign_core(all_classes)
 
     if args.test:
         print("\nLab Times:")
