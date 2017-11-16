@@ -521,7 +521,7 @@ def make_schedule_extension(all_classes, all_rooms, teacherList, time_list):
             all_rooms[index_slots // ntimes].taken.put(index_slots % ntimes + 1)
             index_slots = index_slots + 1
             if all_classes[index_class].has_lab:
-                result, index_slots, skipped_slots_lec, skipped_slots_lab =
+                result, index_slots, skipped_slots_lec, skipped_slots_lab = \ 
                     make_lab(index_class, time_list, lec_time, skipped_slots_lec, skipped_slots_lab, teacherList,
                              all_classes, all_rooms, result, index_slots, ntimes)
         else:
@@ -537,7 +537,7 @@ def make_schedule_extension(all_classes, all_rooms, teacherList, time_list):
                     all_rooms[possible_time // ntimes].taken.put(possible_time % ntimes + 1)
                     assigned = True
                     if all_classes[index_class].has_lab:
-                        result, index_slots, skipped_slots_lec, skipped_slots_lab =
+                        result, index_slots, skipped_slots_lec, skipped_slots_lab = \ 
                         make_lab(index_class, time_list, lec_time, skipped_slots_lec, skipped_slots_lab, teacherList,
                                  all_classes, all_rooms, result, index_slots, ntimes)
                     break
@@ -555,7 +555,7 @@ def make_schedule_extension(all_classes, all_rooms, teacherList, time_list):
                     all_rooms[index_slot // ntimes].taken.put(index_slot % ntimes + 1)
                     index_slot = index_slot + 1
                     if all_classes[index_class].has_lab:
-                        result, index_slots, skipped_slots_lec, skipped_slots_lab =
+                        result, index_slots, skipped_slots_lec, skipped_slots_lab = \ 
                         make_lab(index_class, time_list, lec_time, skipped_slots_lec, skipped_slots_lab, teacherList,
                                  all_classes, all_rooms, result, index_slots, ntimes)
             else:  # recover skipped_slots
