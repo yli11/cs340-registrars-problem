@@ -267,6 +267,7 @@ def build_time_table(time_list):
         """
         time_list[time][2] = time_list[time][2].split()
 
+
 def time_conflict(t1, t2, time_list):
     """ Return true if two time slots t1 and t2 overlaps, false otherwise """
     # test whether days are the same
@@ -337,7 +338,7 @@ def choose_student(schedule):
         for student in student_list:
             if count >= schedule[a_class][0].capacity:
                 break
-            elif schedule[a_class][1] in student.taken: 
+            elif schedule[a_class][1] in student.taken:
                 continue
             else:
                 schedule.get(a_class)[2].append(student)
@@ -358,7 +359,7 @@ def assign_core(class_list):
             if core_count[course.dept][course.level - 1] != 0:
                 course.is_core = True
                 core_count[course.dept][course.level -1] = core_count[course.dept][course.level - 1] - 1
-              
+
 
 def TeacherIsValid(teacherList, result, classToSchedule, timeToSchedule):
     """
@@ -401,20 +402,20 @@ def make_schedule_basic(all_students, all_classes, all_rooms, ntimes, teacherLis
     # index_time = index_slot % ntimes+1
     while index_class < max_num_classes:
         if skipped_slots.empty():
-            while not TeacherIsValid(teacherList, result, all_classes[index_class], index_slot%ntimes+1):
+            while not TeacherIsValid(teacherList, result, all_classes[index_class], index_slot % ntimes + 1):
                 # class name : location, time, students
                 skipped_slots.put(index_slot)
                 index_slot = index_slot + 1
-            result[all_classes[index_class]] = (all_rooms[index_slot//ntimes], index_slot%ntimes+1, [])
+            result[all_classes[index_class]] = (all_rooms[index_slot // ntimes], index_slot % ntimes + 1, [])
             index_slot = index_slot + 1
         else:
             copy_skipped_slots = Queue()
             assigned = False  # mark whether current class has been assigned
             while not skipped_slots.empty():
                 possible_time = skipped_slots.get_nowait()
-                if TeacherIsValid(teacherList, result, all_classes[index_class], possible_time%ntimes+1):
-                        # class name : location, time, Students
-                    result[all_classes[index_class]] = (all_rooms[possible_time//ntimes], possible_time%ntimes+1, [])
+                if TeacherIsValid(teacherList, result, all_classes[index_class], possible_time % ntimes + 1):
+                    # class name : location, time, Students
+                    result[all_classes[index_class]] = (all_rooms[possible_time // ntimes], possible_time % ntimes + 1, [])
                     assigned = True
                     break
                 else:
@@ -422,17 +423,17 @@ def make_schedule_basic(all_students, all_classes, all_rooms, ntimes, teacherLis
             if skipped_slots.empty():
                 skipped_slots = copy_skipped_slots
                 if not assigned:
-                    while not TeacherIsValid(teacherList, result, all_classes[index_class], index_slot%ntimes+1):
+                    while not TeacherIsValid(teacherList, result, all_classes[index_class], index_slot % ntimes + 1):
                         # class name : location, time, students
                         skipped_slots.put(index_slot)
                         index_slot = index_slot + 1
-                    result[all_classes[index_class]] = (all_rooms[index_slot//ntimes], index_slot%ntimes+1, [])
+                    result[all_classes[index_class]] = (all_rooms[index_slot // ntimes], index_slot % ntimes + 1, [])
                     index_slot = index_slot + 1
             else:                               # recover skipped_slots
                 while not copy_skipped_slots.empty():
                     skipped_slots.put(copy_skipped_slots.get())
         index_class = index_class + 1
-        
+
     return result
 
 
@@ -534,6 +535,10 @@ if __name__ == "__main__":
         for t in lab_time:
             print(t, lab_time[t])
 
+        print("\nLecture Times:")
+        for t in class_time:
+            print(t, class_time[t])
+
         print("\nInput - Room information:")
         for r in all_rooms:
             print("Room location:", r.idx, "Size:", r.capacity)
@@ -544,7 +549,8 @@ if __name__ == "__main__":
 
         print("\nInput - Class information:")
         for c in all_classes:
-            print("Class name:", c.name, "Teacher:", c.teacher, "Dept:", c.dept, "Level", c.level, "Is Core?", c.is_core, "Has_Lab?", c.has_lab)
+            print("Class name:", c.name, "Teacher:", c.teacher, "Dept:", c.dept,
+                  "Level", c.level, "Is Core?", c.is_core, "Has_Lab?", c.has_lab)
             print("specs:", [s.idx for s in c.specs])
 
 """
