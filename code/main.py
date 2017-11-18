@@ -17,6 +17,7 @@ pd.set_option('max_colwidth', 100000000000)
 
 major_count = {"ANTH": 23, "ASTR": 7, "PHYS": 39, "BIOL": 70, "CHEM": 57, "ARCH": 6, "CMSC": 45, "COML": 9, "EAST": 9, "ECON": 91, "ENGL": 59, "ARTS": 11, "FREN": 14, "GERM": 7, "HIST": 21, "LING": 15, "MATH": 45, "MUSC": 12, "PHIL": 24, "POLS": 54, "PSYC": 54, "RELG": 9, "SOCL": 7, "SPAN": 36, "EDUC": 18, "ENVS": 19}
 
+""" Input/Output Processing """
 
 def read_prefs(filename):
     """ Parse preference lists input
@@ -142,6 +143,7 @@ def read_extension_constraints(filename_rt, filename_c):
     df_raw = pd.read_csv(filename_rt, sep='\t', header=None)
 
     # process last two lines of constraint file 1
+    teacher_line =  df_raw[df_raw[0] == "Teachers"].index[0]
     num_classes = int(df_raw[df_raw[0] == "Classes"].iloc[:, 1])
     num_profs = int(df_raw[df_raw[0] == "Teachers"].iloc[:, 1])
 
@@ -161,7 +163,7 @@ def read_extension_constraints(filename_rt, filename_c):
         all_times[index] = [start, end, days]
 
     # process room info
-    df_rooms = df_raw[r_start + 1:]
+    df_rooms = df_raw[r_start + 1:teacher_line]
     all_rooms = [ClassRoom(row[0], int(row[1]))
                  for index, row in df_rooms.iterrows()]
 
@@ -206,11 +208,10 @@ def read_extension_constraints(filename_rt, filename_c):
 
     # add prof personal conflict info
     for t in all_teachers:
-        n_unavailable_t = randrange(0, 2)
+        n_unavailable_t = randrange(0, 5)
         all_teachers[t] = [all_teachers[t], [randrange(1, len(all_times)+1) for n in range(n_unavailable_t)]]
 
     return all_times, all_rooms, all_classes, all_teachers
-
 
 
 def count_prefs(C, S):
@@ -226,6 +227,79 @@ def count_prefs(C, S):
                 a_class.specs.append(s)
             # print('Adding student ' + str(s.idx) + ' to class ' + str(a_class.name))
 
+
+def print_schedule(schedule, fname):
+    """ Output schedule using pandas
+        Args:
+            schedule (dict): {Course: (ClassRoom, time, [Students])}
+    """
+    # create a dictionary for pandas to print
+    schedule = OrderedDict(sorted(schedule.items(), key=lambda t:t[0].name))
+    dict_schedule = OrderedDict()
+    keys = ["Course", "Room", "Teacher", "Time", "Students"]
+    for i in keys:
+        dict_schedule.setdefault(i, [])
+
+    for course in schedule:
+        dict_schedule["Course"].append(str(course.name))
+        dict_schedule["Room"].append(schedule[course][0].idx)
+        dict_schedule["Teacher"].append(str(course.teacher))
+        dict_schedule["Time"].append(str(schedule[course][1]))
+        dict_schedule["Students"].append(' '.join(
+            [str(s.idx) for s in sorted(schedule[course][2], key=lambda t: t.idx)]))
+
+    # construct a DataFrame from dictionary and print schedule
+    df_schedule = pd.DataFrame(dict_schedule)
+    df_schedule.to_csv(fname, index=False, sep="\t")
+
+
+def print_schedule_extension(schedule, all_times, fname):
+    """ Output schedule using pandas
+        Args:
+            schedule (dict): {Course: (ClassRoom, time, [Students])}
+    """
+    # create a dictionary for pandas to print
+    schedule = OrderedDict(sorted(schedule.items(), key=lambda t:t[0].name))
+    dict_schedule = OrderedDict()
+    keys = ["Course", "Room", "Teacher", "Time", "Students"]
+    for i in keys:
+        dict_schedule.setdefault(i, [])
+
+    for course in schedule:
+        dict_schedule["Course"].append(str(course.name))
+        dict_schedule["Room"].append(schedule[course][0].idx)
+        dict_schedule["Teacher"].append(str(course.teacher))
+        dict_schedule["Time"].append(repr_time(all_times[schedule[course][1]]))
+        dict_schedule["Students"].append(' '.join(
+            [str(s.idx) for s in sorted(schedule[course][2], key=lambda t: t.idx)]))
+
+    # construct a DataFrame from dictionary and print schedule
+    df_schedule = pd.DataFrame(dict_schedule)
+    #df_schedule.to_csv(fname, index=False, sep="\t")
+
+
+def repr_time(t):
+    """ convert time back to a printable form 
+        Args:
+            t (list): [start (int), end (int), days (list)] e.g.[1000, 1100, ['T', 'H']]
+        Returns:
+            str_t (string): "10:00 AM  11:00 AM TH"
+    """
+    str_t = ""
+    for i in range(2):
+        if t[i] >= 1200:
+            if t[i] // 100 == 12:
+                str_t += str(t[i] // 100)+ ":" + str(t[i] % 100).zfill(2) + " PM"
+            else:
+                str_t += str(t[i] // 100 - 12)+ ":" + str(t[i] % 100).zfill(2) + " PM"
+        else:
+            str_t += str(t[i] // 100)+ ":" + str(t[i] % 100).zfill(2) + " AM"
+        str_t += " "
+    str_t += "".join(t[2])
+    return str_t
+
+
+""" Helper Functions """
 
 def find_class(C, c_id):
     """ find the class object by its id
@@ -273,27 +347,8 @@ def build_time_table(time_list):
         time_list[time][2] = time_list[time][2].split()
 
 
-def time_conflict(t1, t2, time_list):
-    """ Return true if two time slots t1 and t2 overlaps, false otherwise """
-    # test whether days are the same
-    if any(day in time_list[t1][2] for day in time_list[t2][2]):
-        # if t1.start >= t2.end, t2.start >= t1.end it must be overlapped
-        if (time_list[t1][0] >= time_list[t2][1]) or (time_list[t1][0] >= time_list[t2][1]):
-            return False
-        elif (time_list[t1][0] < time_list[t2][0] and time_list[t1][1] <= time_list[t2][0]) or \
-                (time_list[t2][0] < time_list[t1][0] and time_list[t2][1] <= time_list[t1][0]):
-            return False
-        else:
-            return True
-    # if no shared day, must not have time conflict.
-    else:
-        return False
-
-
 def seperate_time_table(time_list):
     """ Separate lab times and lecture times """
-
-    temp = deepcopy(time_list)
     lab_time = {}
     class_time = {}
     for time_slot in time_list:
@@ -303,31 +358,6 @@ def seperate_time_table(time_list):
         else:
             class_time[time_slot] = time_list[time_slot]
     return lab_time, class_time
-
-
-def print_schedule(schedule, fname):
-    """ Output schedule using pandas
-        Args:
-            schedule (dict): {Course: (ClassRoom, time, [Students])}
-    """
-    # create a dictionary for pandas to print
-    schedule = OrderedDict(sorted(schedule.items(), key=lambda t: t[0].name))
-    dict_schedule = OrderedDict()
-    keys = ["Course", "Room", "Teacher", "Time", "Students"]
-    for i in keys:
-        dict_schedule.setdefault(i, [])
-
-    for course in schedule:
-        dict_schedule["Course"].append(str(course.name))
-        dict_schedule["Room"].append(schedule[course][0].idx)
-        dict_schedule["Teacher"].append(str(course.teacher))
-        dict_schedule["Time"].append(str(schedule[course][1]))
-        dict_schedule["Students"].append(' '.join(
-            [str(s.idx) for s in sorted(schedule[course][2], key=lambda t: t.idx)]))
-
-    # construct a DataFrame from dictionary and print schedule
-    df_schedule = pd.DataFrame(dict_schedule)
-    df_schedule.to_csv(fname, index=False, sep="\t")
 
 
 def choose_student(schedule):
@@ -390,6 +420,37 @@ def sort_class(course):
         weight = weight * 2
     return weight
 
+
+def time_conflict(t1, t2, time_list):
+    """ Return true if two time slots t1 and t2 overlaps, false otherwise """
+    # test whether days are the same
+    if any(day in time_list[t1][2] for day in time_list[t2][2]):
+        # if t1.start >= t2.end, t2.start >= t1.end it must be overlapped
+        if (time_list[t1][0] >= time_list[t2][1]) or (time_list[t1][0] >= time_list[t2][1]):
+            return False
+        elif (time_list[t1][0] < time_list[t2][0] and time_list[t1][1] <= time_list[t2][0]) or \
+                (time_list[t2][0] < time_list[t1][0] and time_list[t2][1] <= time_list[t1][0]):
+            return False
+        else:
+            return True
+    # if no shared day, must not have time conflict.
+    else:
+        return False
+
+
+def check_time_conflict(t1, teacher_unavailable, timelist, all_rooms, index):
+    """ check for room-time conflicts and teacher-time conflicts """
+    for t2 in teacher_unavailable:
+        if time_conflict(t1, t2, timelist):
+            return False
+    for t3 in all_rooms[index].taken:
+        if time_conflict(t1,t3,timelist):
+            return False
+    return True
+
+
+""" Actual Scheduling Algorithm """    
+
 def make_schedule_basic(all_students, all_classes, all_rooms, ntimes, teacherList):
     # sort classes by popularity, sort classrooms by size
     all_classes.sort(key=lambda x: len(x.specs), reverse=True)
@@ -442,24 +503,10 @@ def make_schedule_basic(all_students, all_classes, all_rooms, ntimes, teacherLis
     return result
 
 
-# check for room-time conflicts and teacher-time conflicts
-def check_time_conflict(t1, timetable, timelist, all_rooms, index):
-    for t2 in timetable:
-        if time_conflict(t1, t2, timelist):
-            return False
-    for t3 in  all_rooms[index].taken:
-        if time_conflict(t1,t3,timelist):
-            return False
-    return True
-
-# TODO: lineno 482 (probably similar places), this function is called with these parameters:
-#check_time_conflict(possible_time % ntimes+1, teacherList[lab_prof], timelist, all_rooms, possible_time//ntimes)
-
-
 def make_lab(lab, timelist, lec_time, lec_queue, lab_queue, teacherList, all_classes, all_rooms, result, index_slot,
              ntimes, lab_prof):
     if lab_queue.empty():
-        while not check_time_conflict(index_slot % ntimes + 1, teacherList[lab_prof],
+        while not check_time_conflict(index_slot % ntimes + 1, teacherList[lab_prof][1],
                                       timelist, all_rooms, index_slot // ntimes) or index_slot % ntimes + 1 \
                 in lec_time.keys():
             if index_slot % ntimes + 1 in lec_time.keys():
@@ -470,7 +517,9 @@ def make_lab(lab, timelist, lec_time, lec_queue, lab_queue, teacherList, all_cla
         if all_classes[lab].dept == "ARTS":
             result[all_classes[lab]] = (all_rooms[index_slot // ntimes], index_slot % ntimes + 1, [])
         else:
-            result[all_classes[lab].name + "L"] = (all_rooms[index_slot // ntimes], index_slot % ntimes + 1, [])
+            new_course = Course(all_classes[lab].name, lab_prof, all_classes[lab].specs, 
+                                all_classes[lab].dept, all_classes[lab].level)
+            result[new_course] = (all_rooms[index_slot // ntimes], index_slot % ntimes + 1, [])
         # assign time to room
         all_rooms[index_slot // ntimes].taken.append(index_slot % ntimes + 1)
         teacherList[lab_prof][1].append(index_slot % ntimes + 1)
@@ -488,7 +537,9 @@ def make_lab(lab, timelist, lec_time, lec_queue, lab_queue, teacherList, all_cla
                     result[all_classes[lab]] = (all_rooms[index_slot // ntimes],
                                                 possible_time % ntimes + 1, [])
                 else:
-                    result[all_classes[lab].name + "L"] = (all_rooms[index_slot // ntimes],
+                    new_course = Course(all_classes[lab].name, lab_prof, all_classes[lab].specs, 
+                                all_classes[lab].dept, all_classes[lab].level)
+                    result[new_course] = (all_rooms[index_slot // ntimes],
                                                            possible_time % ntimes + 1, [])
                 all_rooms[possible_time // ntimes].taken.append(possible_time % ntimes + 1)
                 teacherList[lab_prof][1].append(possible_time % ntimes + 1)
@@ -511,7 +562,9 @@ def make_lab(lab, timelist, lec_time, lec_queue, lab_queue, teacherList, all_cla
                     result[all_classes[lab]] = (all_rooms[index_slot // ntimes],
                                                 index_slot % ntimes + 1, [])
                 else:
-                    result[str(all_classes[lab].name) + "L"] = (all_rooms[index_slot // ntimes],
+                    new_course = Course(all_classes[lab].name, lab_prof, all_classes[lab].specs, 
+                                all_classes[lab].dept, all_classes[lab].level)
+                    result[new_course] = (all_rooms[index_slot // ntimes],
                                                                 index_slot % ntimes + 1, [])
                 all_rooms[index_slot // ntimes].taken.append(index_slot % ntimes + 1)
                 teacherList[lab_prof][1].append(possible_time % ntimes + 1)
@@ -522,11 +575,22 @@ def make_lab(lab, timelist, lec_time, lec_queue, lab_queue, teacherList, all_cla
         return result, index_slot, lec_queue, lab_queue
 
 
-# room now has a tuple to store all taken time,which will help us check room-time comflict
+
 def make_schedule_extension(all_classes, all_rooms, teacherList, time_list):
+    """ 
+        Args:
+            all_classes (list): list of Course objects w/ attr. name (int), teacher (int), dept (str), 
+                                level (int), specs (list of ints), is_core (bool), has_lab (int)  
+            all_rooms (list): list of ClassRoom obejcts, w/ attr. idx (str), capacity (int)
+            teacherList (dict): {teacher_id (int): [class_name (int), personal_conflicts (list of ints)]}
+            time_list (dict): {index_time: [start(int), end(int), day(list of strings)]}
+        Returns:
+            schedule (dict): {Course: (ClassRoom, time, [Students])} 
+    """
+
     all_classes.sort(key=lambda x: sort_class(x), reverse=True)
     all_rooms.sort(key=lambda x: x.capacity, reverse=True)
-    lec_time, lab_time = seperate_time_table(time_list)
+    lab_time, lec_time = seperate_time_table(time_list)
     skipped_slots_lec = Queue()
     skipped_slots_lab = Queue()
     ntimes = len(all_times)
@@ -558,6 +622,9 @@ def make_schedule_extension(all_classes, all_rooms, teacherList, time_list):
                 index_slot = index_slot + 1
 
                 if all_classes[index_class].has_lab != 0:
+                    # append the lecture's time to lab instructor's list of unavailable times so that lab
+                    # doesn't conflict with lecture
+                    teacherList[all_classes[index_class].has_lab][1].append(index_slot % ntimes + 1)
                     result, index_slot, skipped_slots_lec, skipped_slots_lab = \
                         make_lab(index_class, time_list, lec_time, skipped_slots_lec,
                                  skipped_slots_lab, teacherList, all_classes, all_rooms, result, index_slot, ntimes,
@@ -576,8 +643,11 @@ def make_schedule_extension(all_classes, all_rooms, teacherList, time_list):
                         teacherList[all_classes[index_class].teacher][1].append(possible_time % ntimes + 1)
                         assigned = True
                         if all_classes[index_class].has_lab != 0:
+                            # append the lecture's time to lab instructor's list of unavailable times so that lab
+                            # doesn't conflict with lecture
+                            teacherList[all_classes[index_class].has_lab][1].append(possible_time % ntimes + 1)
                             result, index_slot, skipped_slots_lec, skipped_slots_lab = \
-                                make_lab(all_classes[index_class].has_lab, time_list, lec_time, skipped_slots_lec,
+                                make_lab(index_class, time_list, lec_time, skipped_slots_lec,
                                          skipped_slots_lab, teacherList, all_classes, all_rooms, result, index_slot,
                                          ntimes, all_classes[index_class].has_lab)
                         break
@@ -603,10 +673,9 @@ def make_schedule_extension(all_classes, all_rooms, teacherList, time_list):
                         index_slot = index_slot + 1
                         if all_classes[index_class].has_lab != 0:
                             result, index_slot, skipped_slots_lec, skipped_slots_lab = \
-                                make_lab(all_classes[index_class].has_lab, time_list, lec_time, skipped_slots_lec,
+                                make_lab(index_class, time_list, lec_time, skipped_slots_lec,
                                          skipped_slots_lab, teacherList, all_classes, all_rooms, result, index_slot,
-                                         ntimes,
-                                         all_classes[index_class].has_lab)
+                                         ntimes, all_classes[index_class].has_lab)
                 else:  # recover skipped_slots
                     while not copy_skipped_slots.empty():
                         skipped_slots_lec.put(copy_skipped_slots.get())
@@ -652,10 +721,11 @@ if __name__ == "__main__":
         count_prefs(all_classes, all_students)
         assign_core(all_classes)
         schedule = make_schedule_extension(all_classes, all_rooms, all_teachers, all_times)
-        subprocess.call(["perl", "is_valid.pl", "../test_data/haverfordConstraints.txt", args.infiles[0], args.outfile])
+        print_schedule_extension(schedule, all_times, args.outfile)
+        #subprocess.call(["perl", "is_valid.pl", "../test_data/haverfordConstraints.txt", args.infiles[0], args.outfile])
 
         # for printing intermediate results
-        lec_time, lab_time = seperate_time_table(all_times)
+        lab_time, lec_time = seperate_time_table(all_times)
 
 
     if args.test:
@@ -680,9 +750,17 @@ if __name__ == "__main__":
 
         print("\nInput - Class information:")
         for c in all_classes:
+            if c is None:
+                print("Yikes!")
+                exit(-1)
             print("Class name:", c.name, "Teacher:", c.teacher, "Dept:", c.dept,
                   "Level", c.level, "Is Core?", c.is_core, "Has_Lab?", c.has_lab)
             print("specs:", [s.idx for s in c.specs])
+
+        print("\n ===============Schedule=============\n")
+        for c in schedule:
+            # schedule (dict): {Course: (ClassRoom, time_index, [Students])}
+            print(c.name, "\t", c.teacher, "\t", schedule[c][0].idx, "\t", repr_time(all_times[schedule[c][1]]))
 
 """
         print("\nOutput - Class schedule with students")
