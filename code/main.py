@@ -377,7 +377,65 @@ def choose_student(schedule):
                 schedule.get(a_class)[2].append(student)
                 count = count + 1
                 student.taken.append(schedule[a_class][1])
-
+def find_lab(schedule,course):
+    """ find whether a course has a lab. If so return a tuple contains this class and lab, otherwise, return an
+        empty tuple:
+        Args:
+             schedule (dict): {Course: (ClassRoom, time, [Students])}
+             course: Course 
+    """
+    for lab in schedule:
+        if lab.name == course.name and lab != course:
+            return lab
+                
+def check_student_conflict(t1,student,time_list):
+    """
+       check whether a student has conflicted class in his schedule with input time
+    """
+    for t2 in student.taken:
+        if time_conflict(t1,t2,time_list):
+            return False
+    return True
+            
+                
+def choose_student_extension(schedule):
+    """ Choose student from specs to into the student list of corresponding class in dictionary
+        Args:
+            schedule (dict): {Course: (ClassRoom, time, [Students])}
+        If the course has a lab, lab will share the same name of that course and stored time in it.
+    """
+    for a_class in schedule:
+        studet_list = a_class.specs
+        shuffle(student_list)
+        time_class = schedule[a_class][1]
+        count = 0
+        #if a_class has lab, its has_lab attribute will be more than 0, and we will find lab
+        if a_class.has_lab > 0 :
+            lab = find_lab(schedule,a_class)
+            time_lab = schedule[lab][1]
+            for student in student_list:
+                 if count >= schedule[a_class][0].capacity:
+                     break
+                 elif check_student_conflict(time_class,student,all_times):
+                     continue
+                 elif check_student_conflict(time_lab,student,all_times):
+                     continue
+                 else:
+                     schedule.get(a_class)[2].append(student)
+                     schedule.get(lab)[2].append(student)
+                     count = count + 1
+                     student.taken.append(schedule[a_class][1])
+                     student.taken.append(schedule[lab][1])
+        elif a_class.has_lab == 0:
+            for student in student_list:
+                 if count >= schedule[a_class][0].capacity:
+                     break
+                 elif check_student_conflict(time_class,student,all_times):
+                     continue
+                 else:
+                     schedule.get(a_class)[2].append(student)
+                     count = count + 1
+                     student.taken.append(schedule[a_class][1])  
 
 def assign_core(class_list):
     core_count = {}
