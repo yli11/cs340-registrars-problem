@@ -71,7 +71,7 @@ def read_constraints(filename):
     df_raw = pd.read_csv(filename, sep='\t', header=None)
 
     # record the number of time slots
-    ntimes = int(df_raw.loc[0, 2])
+    ntimes = int(df_raw.loc[0, 1])
 
     # parse remaining info into two parts, one about rooms, the other about
     # teachers
@@ -97,8 +97,7 @@ def read_constraints(filename):
 
     # construct teacher list
     for t in range(1, int(nteachers) + 1):
-        all_teachers[t] = list(map(int, df_teachers.loc[df_teachers[
-                               nteachers] == str(t), 'Teachers'].tolist()))
+        all_teachers[t] = list(map(int, df_teachers.loc[df_teachers[nteachers] == t, 'Teachers'].tolist()))
 
     return ntimes, all_rooms, all_classes, all_teachers
 
@@ -146,7 +145,6 @@ def read_extension_constraints(filename_rt, filename_c):
     num_classes = int(df_raw[df_raw[0] == "Classes"].iloc[:, 1])
     num_profs = int(df_raw[df_raw[0] == "Teachers"].iloc[:, 1])
 
-    # TODO: Process time
     r_start = df_raw[df_raw[0] == "Rooms"].index[0]
     ntimes = int(df_raw.loc[0, 1])
     df_times = df_raw[1:r_start]
@@ -199,7 +197,7 @@ def read_extension_constraints(filename_rt, filename_c):
     try:
         for i in classes_with_labs:
             c = find_class(all_classes, i[0])
-            c.has_lab = [c.teacher if i[1]==0 else i[1]]
+            c.has_lab = c.teacher if i[1]==0 else i[1]
             if i[1]!=0:
                 all_teachers[i[1]].append(i[0])
     except:
@@ -454,72 +452,71 @@ def check_time_conflict(t1, timetable, timelist, all_rooms, index):
             return False
     return True
 
+# TODO: lineno 482 (probably similar places), this function is called with these parameters:
+#check_time_conflict(possible_time % ntimes+1, teacherList[lab_prof], timelist, all_rooms, possible_time//ntimes)
 
-# TODO: don't have all_labs???
-def make_lab(lab, timelist, lec_time, lec_queue, lab_queue, teacherList, all_classes, all_rooms, result, index_slots,
-             ntimes):
-    if lab_queue.emtpy():
-        while not check_time_conflict(index_slots % ntimes+1, teacherList[all_classes[lab]],
-                                      timelist, all_rooms, index_slots//ntimes) or index_slots % ntimes+1 \
+
+def make_lab(lab, timelist, lec_time, lec_queue, lab_queue, teacherList, all_classes, all_rooms, result, index_slot,
+             ntimes, lab_prof):
+    if lab_queue.empty():
+        while not check_time_conflict(index_slot % ntimes+1, teacherList[lab_prof],
+                                      timelist, all_rooms, index_slot//ntimes) or index_slot % ntimes+1 \
                 in lec_time.keys():
-            if index_slots % ntimes+1 in lec_time.keys():
-                lec_queue.put(index_slots)
+            if index_slot % ntimes+1 in lec_time.keys():
+                lec_queue.put(index_slot)
             else:
-                lab_queue.put(index_slots)
-            index_slots = index_slots + 1
+                lab_queue.put(index_slot)
+            index_slot = index_slot + 1
         if all_classes[lab].dept == "ARTS":
-            result[all_classes[lab] + " (Arts)"] = (all_rooms[index_slots // ntimes], index_slots % ntimes + 1, [])
+            result[all_classes[lab]] = (all_rooms[index_slot // ntimes], index_slot % ntimes + 1, [])
         else:
-            result[all_classes[lab]+" (lab)"] = (all_rooms[index_slots // ntimes], index_slots % ntimes + 1, [])
+            result[all_classes[lab].name + "L"] = (all_rooms[index_slot // ntimes], index_slot % ntimes + 1, [])
         # assign time to room
-        all_rooms[index_slots // ntimes].taken.put(index_slots % ntimes + 1)
-        index_slots = index_slots + 1
+        all_rooms[index_slot // ntimes].taken.append(index_slot % ntimes + 1)
+        index_slot = index_slot + 1
     else:
         copy_lab = Queue()
         assigned = False
         while not lab_queue.empty():
             possible_time = lab_queue.get_nowait()
-            if check_time_conflict(possible_time % ntimes+1, teacherList[all_classes[lab]], timelist,
+            if check_time_conflict(possible_time % ntimes+1, teacherList[lab_prof], timelist,
                                    all_rooms, possible_time//ntimes):
                 # class name : location, time, Students
                 if all_classes[lab].dept == "ARTS":
-                    result[all_classes[lab] + " (Arts)"] = (all_rooms[index_slots // ntimes],
+                    result[all_classes[lab]] = (all_rooms[index_slot // ntimes],
                                                             possible_time % ntimes + 1, [])
                 else:
-                    result[all_classes[lab] + " (lab)"] = (all_rooms[index_slots // ntimes],
+                    result[all_classes[lab].name + "L"] = (all_rooms[index_slot // ntimes],
                                                            possible_time % ntimes + 1, [])
-                all_rooms[possible_time // ntimes].taken.put(possible_time % ntimes + 1)
+                all_rooms[possible_time // ntimes].taken.append(possible_time % ntimes + 1)
                 assigned = True
                 break
             else:
                 copy_lab.put(possible_time)
-        if lab_queue.emtpy():
+        if lab_queue.empty():
             lab_queue = copy_lab
             if not assigned:
-                while not check_time_conflict(index_slots % ntimes+1, teacherList[all_classes[lab]],
-                                              timelist, all_rooms, index_slots // ntimes) or index_slots % ntimes+1 \
+                while not check_time_conflict(index_slot % ntimes+1, teacherList[lab_prof],
+                                              timelist, all_rooms, index_slot // ntimes) or index_slot % ntimes+1 \
                                               in lec_time.keys():
-                    if index_slots % ntimes + 1 in lec_time.keys():
-                        lec_queue.put(index_slots)
+                    if index_slot % ntimes + 1 in lec_time.keys():
+                        lec_queue.put(index_slot)
                     else:
-                        lab_queue.put(index_slots)
-                    index_slots = index_slots + 1
+                        lab_queue.put(index_slot)
+                    index_slot = index_slot + 1
                 if all_classes[lab].dept == "ARTS":
-                    result[all_classes[lab] + " (Arts)"] = (all_rooms[index_slots // ntimes],
-                                                            index_slots % ntimes + 1, [])
+                    result[all_classes[lab]] = (all_rooms[index_slot // ntimes],
+                                                            index_slot % ntimes + 1, [])
                 else:
-                    result[all_classes[lab] + " (lab)"] = (all_rooms[index_slots // ntimes],
-                                                           index_slots % ntimes + 1, [])
-                all_rooms[index_slots // ntimes].taken.put(index_slots % ntimes + 1)
-                index_slots = index_slots + 1
+                    result[str(all_classes[lab].name) + "L"] = (all_rooms[index_slot // ntimes],
+                                                           index_slot % ntimes + 1, [])
+                all_rooms[index_slot // ntimes].taken.append(index_slot % ntimes + 1)
+                index_slot = index_slot + 1
             else:                               # recover skipped_slots
                 while not copy_lab.empty():
                     lab_queue.put(copy_lab.get())
-        return result, index_slots, lec_queue, lab_queue
+        return result, index_slot, lec_queue, lab_queue
 
-# TODO: 1. don't have all_labs, course.has_lab = [190] or [] (i.e. classes w/ no labs has an empty list
-#           otherwise, it's an instructor ID)                   (checked)
-# TODO: 2. Fine arts classes also need to be scheduled during lab time (i.e. if course.dept = "ARTS") (checked)
 
 # room now has a tuple to store all taken time,cwhich will help us check room-time comflict
 def make_schedule_extension(all_classes, all_rooms, teacherList, time_list):
@@ -528,35 +525,37 @@ def make_schedule_extension(all_classes, all_rooms, teacherList, time_list):
     lec_time, lab_time = seperate_time_table(time_list)
     skipped_slots_lec = Queue()
     skipped_slots_lab = Queue()
-    ntimes = len(lec_time)
+    ntimes = len(all_times)
     max_num_classes = min(len(all_classes), len(all_rooms) * ntimes)
     index_class = 0
-    index_slots = 0
+    index_slot = 0
     result = {}
     while index_class < max_num_classes:
-        if all_classes[index_class].dept.equals("ARTS"):
-            result, index_slots, skipped_slots_lec, skipped_slots_lab = \
+        if all_classes[index_class].dept == "ARTS":
+            result, index_slot, skipped_slots_lec, skipped_slots_lab = \
                 make_lab(index_class, time_list, lec_time, skipped_slots_lec,
-                         skipped_slots_lab, teacherList, all_classes, all_rooms, result, index_slots, ntimes)
+                         skipped_slots_lab, teacherList, all_classes, all_rooms, result, index_slot, ntimes,
+                         all_classes[index_class].teacher)
         else:
             if skipped_slots_lec.empty():
                 # teacherList[all_classes[index_class].teacher][1] are time that have already been taken
-                while not check_time_conflict(index_slots % ntimes + 1, teacherList[all_classes[index_class].teacher][1],
-                                              time_list, all_rooms, index_slots // ntimes) or index_slots % ntimes+1\
+                while not check_time_conflict(index_slot % ntimes + 1, teacherList[all_classes[index_class].teacher][1],
+                                              time_list, all_rooms, index_slot // ntimes) or index_slot % ntimes+1\
                                             in lab_time.keys():
                     # class name : location, time, students
-                    if index_slots % ntimes + 1 in lab_time.keys():
-                        skipped_slots_lab.put(index_slots)
+                    if index_slot % ntimes + 1 in lab_time.keys():
+                        skipped_slots_lab.put(index_slot)
                     else:
-                        skipped_slots_lec.put(index_slots)
-                    index_slots = index_slots + 1
-                result[all_classes[index_class]] = (all_rooms[index_slots // ntimes], index_slots % ntimes + 1, [])
-                all_rooms[index_slots // ntimes].taken.put(index_slots % ntimes + 1)
-                index_slots = index_slots + 1
+                        skipped_slots_lec.put(index_slot)
+                    index_slot = index_slot + 1
+                result[all_classes[index_class]] = (all_rooms[index_slot // ntimes], index_slot % ntimes + 1, [])
+                all_rooms[index_slot // ntimes].taken.append(index_slot % ntimes + 1)
+                index_slot = index_slot + 1
                 if all_classes[index_class].has_lab != 0:
-                    result, index_slots, skipped_slots_lec, skipped_slots_lab = \
-                        make_lab(all_classes[index_class].has_lab, time_list, lec_time, skipped_slots_lec,
-                                 skipped_slots_lab, teacherList, all_classes, all_rooms, result, index_slots, ntimes)
+                    result, index_slot, skipped_slots_lec, skipped_slots_lab = \
+                        make_lab(index_class, time_list, lec_time, skipped_slots_lec,
+                                 skipped_slots_lab, teacherList, all_classes, all_rooms, result, index_slot, ntimes,
+                                 all_classes[index_class].has_lab)
             else:
                 copy_skipped_slots = Queue()
                 assigned = False  # mark whether current class has been assigned
@@ -567,32 +566,34 @@ def make_schedule_extension(all_classes, all_rooms, teacherList, time_list):
                         # class name : location, time, Students
                         result[all_classes[index_class]] = (all_rooms[possible_time // ntimes], possible_time % ntimes + 1,
                                                             [])
-                        all_rooms[possible_time // ntimes].taken.put(possible_time % ntimes + 1)
+                        all_rooms[possible_time // ntimes].taken.append(possible_time % ntimes + 1)
                         assigned = True
                         if all_classes[index_class].has_lab != 0:
-                            result, index_slots, skipped_slots_lec, skipped_slots_lab = \
+                            result, index_slot, skipped_slots_lec, skipped_slots_lab = \
                                 make_lab(all_classes[index_class].has_lab, time_list, lec_time, skipped_slots_lec,
-                                         skipped_slots_lab, teacherList, all_classes, all_rooms, result, index_slots, ntimes)
+                                         skipped_slots_lab, teacherList, all_classes, all_rooms, result, index_slot, 
+                                         ntimesall_classes[index_class].has_lab)
                         break
                     else:
                         copy_skipped_slots.put(possible_time)
                 if skipped_slots_lec.empty():
                     skipped_slots_lec = copy_skipped_slots
                     if not assigned:
-                        while not check_time_conflict(index_slots % ntimes + 1,
+                        while not check_time_conflict(index_slot % ntimes + 1,
                                                       teacherList[all_classes[index_class].teacher][1], time_list,
-                                                      all_rooms, index_slots // ntimes) or index_slots % ntimes+1 in \
+                                                      all_rooms, index_slot // ntimes) or index_slot % ntimes+1 in \
                                                       lab_time.keys():
                             # class name : location, time, students
                             skipped_slots_lec.put(index_slot)
                             index_slot = index_slot + 1
                         result[all_classes[index_class]] = (all_rooms[index_slot // ntimes], index_slot % ntimes + 1, [])
-                        all_rooms[index_slot // ntimes].taken.put(index_slot % ntimes + 1)
+                        all_rooms[index_slot // ntimes].taken.append(index_slot % ntimes + 1)
                         index_slot = index_slot + 1
                         if all_classes[index_class].has_lab != 0:
-                            result, index_slots, skipped_slots_lec, skipped_slots_lab = \
+                            result, index_slot, skipped_slots_lec, skipped_slots_lab = \
                                 make_lab(all_classes[index_class].has_lab, time_list, lec_time, skipped_slots_lec,
-                                         skipped_slots_lab, teacherList, all_classes, all_rooms, result, index_slots, ntimes)
+                                         skipped_slots_lab, teacherList, all_classes, all_rooms, result, index_slot, ntimes,
+                                         all_classes[index_class].has_lab)
                 else:  # recover skipped_slots
                     while not copy_skipped_slots.empty():
                         skipped_slots_lec.put(copy_skipped_slots.get())
@@ -635,9 +636,12 @@ if __name__ == "__main__":
         all_students = read_extension_prefs(args.infiles[0])
         all_times, all_rooms, all_classes, all_teachers = read_extension_constraints(args.infiles[1], args.infiles[2])
         build_time_table(all_times)
-        lab_time, class_time = seperate_time_table(all_times)
+        lec_time, lab_time = seperate_time_table(all_times)
         count_prefs(all_classes, all_students)
         assign_core(all_classes)
+        schedule = make_schedule_extension(all_classes, all_rooms, all_teachers, all_times)
+        subprocess.call(["perl", "is_valid.pl", "../test_data/haverfordConstraints.txt", args.infiles[0], args.outfile])
+
 
     if args.test:
         print("\nLab Times:")
@@ -645,8 +649,8 @@ if __name__ == "__main__":
             print(t, lab_time[t])
 
         print("\nLecture Times:")
-        for t in class_time:
-            print(t, class_time[t])
+        for t in lec_time:
+            print(t, lec_time[t])
 
         print("\nInput - Room information:")
         for r in all_rooms:
