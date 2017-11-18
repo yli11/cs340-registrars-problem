@@ -26,6 +26,7 @@ class ClassRoom:
     def __init__(self, idx, size=0):
         self.idx = idx
         self.capacity = size
+        self.taken = []
 
 
 class Course:
@@ -45,7 +46,7 @@ class Course:
         self.dept = dept
         self.level = level
         self.is_core = False
-        self.has_lab = False
+        self.has_lab = []
         if specs is None:
             self.specs = []
         else:

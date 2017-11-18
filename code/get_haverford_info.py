@@ -2,6 +2,7 @@
 
 import csv
 import sys
+from collections import OrderedDict
 
 def get_data_list_of_dicts(filename):
   list = []
@@ -55,9 +56,25 @@ def get_courses(list_of_dicts):
   for dict in list_of_dicts: 
     course = dict["Course ID"]
     campus = dict["College"]
-    if not course in courses and campus == "H":
+    units = dict["Unit Taken"]
+    if not course in courses and campus == "H" and units != "0":
       courses[course] = dict
+  labs = get_labs(list_of_dicts)
+  courses.update(labs)
   return courses
+
+
+def get_labs(list_of_dicts):
+  labs = {}
+  for dict in list_of_dicts: 
+    course = dict["Course ID"]
+    campus = dict["College"]
+    section = dict["Section"]
+    days = dict["Days 1"]
+    units = dict["Unit Taken"]
+    if section.startswith("00") and not (course+"L" in labs) and units == "0" and campus == "H" and course != "297":
+      labs[course + "L"] = dict
+  return labs
 
 def get_prof_courses(list_of_dicts):
   profs = {}
@@ -172,7 +189,7 @@ def write_time_rooms_to_file(list_of_dicts, filename):
   f.close()
 
 def write_classes_to_file(list_of_dicts, filename): 
-  courses = get_courses(list_of_dicts)
+  courses = OrderedDict(sorted(get_courses(list_of_dicts).iteritems(), key=lambda x: x[0]))
   f = open(filename, 'w')
   for course in courses:
     f.write(course + "\t")
@@ -191,3 +208,5 @@ list_of_dicts = get_data_list_of_dicts(sys.argv[1])
 write_prefs_to_file(list_of_dicts, sys.argv[2])
 write_time_rooms_to_file(list_of_dicts, sys.argv[3])
 write_classes_to_file(list_of_dicts, sys.argv[4])
+
+

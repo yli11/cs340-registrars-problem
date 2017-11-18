@@ -7,7 +7,7 @@ import functools
 import numpy as np
 from multiprocessing import Queue
 from collections import defaultdict, OrderedDict
-from random import shuffle
+from random import shuffle, randrange
 from copy import deepcopy
 from components import ClassRoom, Student, Course
 
@@ -172,40 +172,47 @@ def read_extension_constraints(filename_rt, filename_c):
     df_class_info.columns = ['Class', 'Teacher', 'Subject', 'Level']
     all_classes = []
     classes_with_labs = []
+    all_teachers = defaultdict(list)
 
     # construct Course objects for lectures
-    # TODO: All labs don't have instructor ID, find them and put into a separate list
+    # record which teacher teach which classes
+    # All labs don't have instructor ID, find them and put into a separate list
     try:
         for index, row in df_class_info.iterrows():
             # check for NaN, should be false if teacher is NaN
-            if row['Teacher'] != row['Teacher']:
-                classes_with_labs.append(int(row['Class']))
+            if "L" in row['Class']:
+                if row['Teacher'] != row['Teacher']:
+                    classes_with_labs.append([int(row['Class'][:-1]), 0])
+                else:
+                    classes_with_labs.append([int(row['Class'][:-1]), int(row['Teacher'])])
             else:
                 all_classes.append(Course(int(row['Class']), int(
                     row['Teacher']), None, row['Subject'], int(row['Level'])))
+                all_teachers[int(row['Teacher'])].append(int(row['Class']))
+
     except:
-        print("When trying to process the following class, there is an error:")
+        print("When trying to process the following class, something went wrong:")
         print(row, index)
         exit(-1)
-    
-    # TODO: add has_lab attribute
-    """
+
+    # add has_lab attribute and append Course ID to lab instructor's class list
     try:
         for i in classes_with_labs:
-            c = find_class(all_classes, i)
-            c.has_lab = True
+            c = find_class(all_classes, i[0])
+            c.has_lab = [c.teacher if i[1]==0 else i[1]]
+            if i[1]!=0:
+                all_teachers[i[1]].append(i[0])
     except:
-        print("Possibly can't find this class")
+        print("Possibly can't find the lecture section of this lab")
         print(i)
-    """
 
-    # TODO: process teacher info
-    all_teachers = {}
-    for t in range(1, int(num_profs) + 1):
-        all_teachers[t] = list(map(int, df_class_info.loc[df_class_info[
-                               'Teacher'] == float(t), 'Teacher'].tolist()))
+    # add prof personal conflict info
+    for t in all_teachers:
+        n_unavailable_t = randrange(0, 2)
+        all_teachers[t] = [all_teachers[t], [randrange(1, len(all_times)+1) for n in range(n_unavailable_t)]]
 
     return all_times, all_rooms, all_classes, all_teachers
+
 
 
 def count_prefs(C, S):
@@ -448,6 +455,7 @@ def check_time_conflict(t1, timetable, timelist, all_rooms, index):
     return True
 
 
+# TODO: don't have all_labs???
 def make_lab(lab, timelist, lec_time, lec_queue, lab_queue, teacherList, all_classes, all_rooms, result, index_slots,
              ntimes, all_labs):
     if lab_queue.emtpy():
@@ -496,7 +504,11 @@ def make_lab(lab, timelist, lec_time, lec_queue, lab_queue, teacherList, all_cla
         return result, index_slots, lec_queue, lab_queue
 
 
-# room now has a tuple to store all taken time,which will help us check room-time comflict
+# TODO: 1. don't have all_labs, course.has_lab = [190] or [] (i.e. classes w/ no labs has an empty list
+#           otherwise, it's an instructor ID)
+# TODO: 2. Fine arts classes also need to be scheduled during lab time (i.e. if course.dept = "ARTS")
+
+# room now has a tuple to store all taken time,cwhich will help us check room-time comflict
 def make_schedule_extension(all_classes, all_rooms, teacherList, time_list, all_labs):
     all_classes.sort(key=lambda x: sort_class(x), reverse=True)
     all_rooms.sort(key=lambda x: x.capacity, reverse=True)
@@ -522,7 +534,7 @@ def make_schedule_extension(all_classes, all_rooms, teacherList, time_list, all_
             result[all_classes[index_class]] = (all_rooms[index_slots // ntimes], index_slots % ntimes + 1, [])
             all_rooms[index_slots // ntimes].taken.put(index_slots % ntimes + 1)
             index_slots = index_slots + 1
-            if all_labs[index_class] != "":
+            if all_classes[index_class].has_lab:
                 result, index_slots, skipped_slots_lec, skipped_slots_lab = \
                     make_lab(index_class, time_list, lec_time, skipped_slots_lec, skipped_slots_lab, teacherList,
                              all_classes, all_rooms, result, index_slots, ntimes, all_labs)
@@ -538,10 +550,10 @@ def make_schedule_extension(all_classes, all_rooms, teacherList, time_list, all_
                                                         [])
                     all_rooms[possible_time // ntimes].taken.put(possible_time % ntimes + 1)
                     assigned = True
-                    if all_labs[index_class] != "":
+                    if all_classes[index_class].has_lab:
                         result, index_slots, skipped_slots_lec, skipped_slots_lab = \
-                            make_lab(index_class, time_list, lec_time, skipped_slots_lec, skipped_slots_lab,
-                                     teacherList, all_classes, all_rooms, result, index_slots, ntimes, all_labs)
+                        make_lab(index_class, time_list, lec_time, skipped_slots_lec, skipped_slots_lab, teacherList,
+                                 all_classes, all_rooms, result, index_slots, ntimes)
                     break
                 else:
                     copy_skipped_slots.put(possible_time)
@@ -558,10 +570,10 @@ def make_schedule_extension(all_classes, all_rooms, teacherList, time_list, all_
                     result[all_classes[index_class]] = (all_rooms[index_slot // ntimes], index_slot % ntimes + 1, [])
                     all_rooms[index_slot // ntimes].taken.put(index_slot % ntimes + 1)
                     index_slot = index_slot + 1
-                    if all_labs[index_class] != "":
+                    if all_classes[index_class].has_lab:
                         result, index_slots, skipped_slots_lec, skipped_slots_lab = \
-                            make_lab(index_class, time_list, lec_time, skipped_slots_lec, skipped_slots_lab,
-                                     teacherList, all_classes, all_rooms, result, index_slots, ntimes, all_labs)
+                        make_lab(index_class, time_list, lec_time, skipped_slots_lec, skipped_slots_lab, teacherList,
+                                 all_classes, all_rooms, result, index_slots, ntimes)
             else:  # recover skipped_slots
                 while not copy_skipped_slots.empty():
                     skipped_slots_lec.put(copy_skipped_slots.get())
@@ -622,8 +634,11 @@ if __name__ == "__main__":
             print("Room location:", r.idx, "Size:", r.capacity)
 
         print("\nInput - Teacher information:")
-        for r in all_teachers:
-            print("ID:", r, "Classes:", all_teachers[r])
+        count = 0
+        for t in all_teachers:
+            print("ID:", t, "Classes:", all_teachers[t][0], "Personal Conflicts:", all_teachers[t][1])
+            count += len(all_teachers[t][0])
+        print('\n', count, "classes have instructors.")
 
         print("\nInput - Class information:")
         for c in all_classes:
