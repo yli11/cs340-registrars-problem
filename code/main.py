@@ -399,7 +399,7 @@ def check_student_conflict(t1,student,time_list):
     return False
             
                 
-def choose_student_extension(schedule):
+def choose_student_extension(schedule,time_list):
     """ Choose student from specs to into the student list of corresponding class in dictionary
         Args:
             schedule (dict): {Course: (ClassRoom, time, [Students])}
@@ -417,9 +417,9 @@ def choose_student_extension(schedule):
             for student in student_list:
                  if count >= schedule[a_class][0].capacity:
                      break
-                 elif check_student_conflict(time_class,student,all_times):
+                 elif check_student_conflict(time_class,student,time_list):
                      continue
-                 elif check_student_conflict(time_lab,student,all_times):
+                 elif check_student_conflict(time_lab,student,time_list):
                      continue
                  else:
                      schedule[a_class][2].append(student)
