@@ -474,6 +474,7 @@ def make_lab(lab, timelist, lec_time, lec_queue, lab_queue, teacherList, all_cla
         # assign time to room
         all_rooms[index_slot // ntimes].taken.append(index_slot % ntimes + 1)
         index_slot = index_slot + 1
+
     else:
         copy_lab = Queue()
         assigned = False
@@ -518,7 +519,7 @@ def make_lab(lab, timelist, lec_time, lec_queue, lab_queue, teacherList, all_cla
         return result, index_slot, lec_queue, lab_queue
 
 
-# room now has a tuple to store all taken time,cwhich will help us check room-time comflict
+# room now has a tuple to store all taken time,which will help us check room-time comflict
 def make_schedule_extension(all_classes, all_rooms, teacherList, time_list):
     all_classes.sort(key=lambda x: sort_class(x), reverse=True)
     all_rooms.sort(key=lambda x: x.capacity, reverse=True)
@@ -551,6 +552,7 @@ def make_schedule_extension(all_classes, all_rooms, teacherList, time_list):
                 result[all_classes[index_class]] = (all_rooms[index_slot // ntimes], index_slot % ntimes + 1, [])
                 all_rooms[index_slot // ntimes].taken.append(index_slot % ntimes + 1)
                 index_slot = index_slot + 1
+                
                 if all_classes[index_class].has_lab != 0:
                     result, index_slot, skipped_slots_lec, skipped_slots_lab = \
                         make_lab(index_class, time_list, lec_time, skipped_slots_lec,
@@ -584,7 +586,10 @@ def make_schedule_extension(all_classes, all_rooms, teacherList, time_list):
                                                       all_rooms, index_slot // ntimes) or index_slot % ntimes+1 in \
                                                       lab_time.keys():
                             # class name : location, time, students
-                            skipped_slots_lec.put(index_slot)
+                            if index_slots % ntimes + 1 in lab_time.keys():
+                                skipped_slots_lab.put(index_slots)
+                            else:
+                                skipped_slots_lec.put(index_slots)
                             index_slot = index_slot + 1
                         result[all_classes[index_class]] = (all_rooms[index_slot // ntimes], index_slot % ntimes + 1, [])
                         all_rooms[index_slot // ntimes].taken.append(index_slot % ntimes + 1)
@@ -636,11 +641,13 @@ if __name__ == "__main__":
         all_students = read_extension_prefs(args.infiles[0])
         all_times, all_rooms, all_classes, all_teachers = read_extension_constraints(args.infiles[1], args.infiles[2])
         build_time_table(all_times)
-        lec_time, lab_time = seperate_time_table(all_times)
         count_prefs(all_classes, all_students)
         assign_core(all_classes)
         schedule = make_schedule_extension(all_classes, all_rooms, all_teachers, all_times)
         subprocess.call(["perl", "is_valid.pl", "../test_data/haverfordConstraints.txt", args.infiles[0], args.outfile])
+
+        # for printing intermediate results
+        lec_time, lab_time = seperate_time_table(all_times)
 
 
     if args.test:
