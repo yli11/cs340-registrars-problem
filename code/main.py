@@ -584,7 +584,10 @@ def make_schedule_extension(all_classes, all_rooms, teacherList, time_list):
                                                       all_rooms, index_slots // ntimes) or index_slots % ntimes+1 in \
                                                       lab_time.keys():
                             # class name : location, time, students
-                            skipped_slots_lec.put(index_slot)
+                            if index_slots % ntimes + 1 in lab_time.keys():
+                                skipped_slots_lab.put(index_slots)
+                            else:
+                                skipped_slots_lec.put(index_slots)
                             index_slot = index_slot + 1
                         result[all_classes[index_class]] = (all_rooms[index_slot // ntimes], index_slot % ntimes + 1, [])
                         all_rooms[index_slot // ntimes].taken.put(index_slot % ntimes + 1)
