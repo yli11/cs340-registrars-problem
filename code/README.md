@@ -35,7 +35,7 @@
 
 ### Student Preferences 
 
-Mark pls fill in this part
+```$ perl make_random_input_e_student.pl <#students>  <../test_data/xx_studentprefs.txt>```
 
 ## Make Schedule (for a single set of input)
 
