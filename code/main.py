@@ -253,29 +253,27 @@ def print_schedule(schedule, fname):
     df_schedule.to_csv(fname, index=False, sep="\t")
 
 
-def print_schedule_extension(schedule, all_times, fname):
+def print_schedule_extension(schedule, fname):
     """ Output schedule using pandas
         Args:
             schedule (dict): {Course: (ClassRoom, time, [Students])}
     """
     # create a dictionary for pandas to print
     schedule = OrderedDict(sorted(schedule.items(), key=lambda t:t[0].name))
-    dict_schedule = OrderedDict()
-    keys = ["Course", "Room", "Teacher", "Time", "Students"]
-    for i in keys:
-        dict_schedule.setdefault(i, [])
 
-    for course in schedule:
-        dict_schedule["Course"].append(str(course.name))
-        dict_schedule["Room"].append(schedule[course][0].idx)
-        dict_schedule["Teacher"].append(str(course.teacher))
-        dict_schedule["Time"].append(repr_time(all_times[schedule[course][1]]))
-        dict_schedule["Students"].append(' '.join(
-            [str(s.idx) for s in sorted(schedule[course][2], key=lambda t: t.idx)]))
-
-    # construct a DataFrame from dictionary and print schedule
-    df_schedule = pd.DataFrame(dict_schedule)
-    #df_schedule.to_csv(fname, index=False, sep="\t")
+    with open(fname, 'w') as f:
+        f.write("Course\tRoom\tTeacher\tTime\tStudents\n")
+        for course in schedule:
+            f.write(str(course.name))
+            f.write("\t")
+            f.write(schedule[course][0].idx)
+            f.write("\t")
+            f.write(str(course.teacher))
+            f.write("\t")
+            f.write(repr_time(all_times[schedule[course][1]]))
+            #f.write("\t")
+            #f.write(' '.join([str(s.idx) for s in sorted(schedule[course][2], key=lambda t: t.idx)]))
+            f.write("\n")
 
 
 def repr_time(t):
@@ -519,6 +517,7 @@ def make_lab(lab, timelist, lec_time, lec_queue, lab_queue, teacherList, all_cla
         else:
             new_course = Course(all_classes[lab].name, lab_prof, all_classes[lab].specs, 
                                 all_classes[lab].dept, all_classes[lab].level)
+            new_course.has_lab = -1
             result[new_course] = (all_rooms[index_slot // ntimes], index_slot % ntimes + 1, [])
         # assign time to room
         all_rooms[index_slot // ntimes].taken.append(index_slot % ntimes + 1)
@@ -539,6 +538,7 @@ def make_lab(lab, timelist, lec_time, lec_queue, lab_queue, teacherList, all_cla
                 else:
                     new_course = Course(all_classes[lab].name, lab_prof, all_classes[lab].specs, 
                                 all_classes[lab].dept, all_classes[lab].level)
+                    new_course.has_lab = -1
                     result[new_course] = (all_rooms[possible_time // ntimes],
                                                            possible_time % ntimes + 1, [])
                 all_rooms[possible_time // ntimes].taken.append(possible_time % ntimes + 1)
@@ -721,7 +721,7 @@ if __name__ == "__main__":
         count_prefs(all_classes, all_students)
         assign_core(all_classes)
         schedule = make_schedule_extension(all_classes, all_rooms, all_teachers, all_times)
-        print_schedule_extension(schedule, all_times, args.outfile)
+        print_schedule_extension(schedule, args.outfile)
         #subprocess.call(["perl", "is_valid.pl", "../test_data/haverfordConstraints.txt", args.infiles[0], args.outfile])
 
         # for printing intermediate results
@@ -750,9 +750,6 @@ if __name__ == "__main__":
 
         print("\nInput - Class information:")
         for c in all_classes:
-            if c is None:
-                print("Yikes!")
-                exit(-1)
             print("Class name:", c.name, "Teacher:", c.teacher, "Dept:", c.dept,
                   "Level", c.level, "Is Core?", c.is_core, "Has_Lab?", c.has_lab)
             print("specs:", [s.idx for s in c.specs])
