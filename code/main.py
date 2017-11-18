@@ -4,6 +4,7 @@ import argparse
 import pandas as pd
 import subprocess
 import functools
+import timeit
 from multiprocessing import Queue
 from collections import defaultdict, OrderedDict
 from random import shuffle, randrange
@@ -102,7 +103,7 @@ def read_constraints(filename):
     return ntimes, all_rooms, all_classes, all_teachers
 
 
-def read_extension_prefs(filename):
+def read_enrollment(filename):
     """ Parse preference lists input
         Args:
             filename (string): name of the input preferece lists
@@ -119,6 +120,37 @@ def read_extension_prefs(filename):
             student_classes[int(row['Student'])] = list(map(int, row['Classes'].split()))
     except:
         print("Index, row went wrong:", index, row)
+
+    # construct a list of Student objects
+    all_students = [Student(i, student_classes[i]) for i in student_classes]
+
+    return all_students
+
+def map_prefs(i):
+    """ Used for map, need all_classes to be global"""
+    return all_classes[int(i)-1].name
+
+
+def read_extension_prefs(filename):
+    """ Parse preference lists input
+        Args:
+            filename (string): name of the input preferece lists
+        Returns:
+            all_students (list): a list of Student objects with arrtibute `idx` (int) and `classes` (a list of int)
+    """
+    # read input file
+    df = pd.read_csv(filename, skiprows=1, sep="\t", names=['Student', 'Classes'])
+
+    try:
+        # put each student's class choices into a list
+        student_classes = {}
+        for index, row in df.iterrows():
+            student_classes[int(row['Student'])] = list(map(map_prefs, row['Classes'].split()))
+    except Exception as e:
+        print("Read Extension Prefs :(")
+        print(e)
+        print("Index, row went wrong:", index, row)
+        print("Class", i)
 
     # construct a list of Student objects
     all_students = [Student(i, student_classes[i]) for i in student_classes]
@@ -252,7 +284,7 @@ def print_schedule(schedule, fname):
     df_schedule.to_csv(fname, index=False, sep="\t")
 
 
-def print_schedule_extension(schedule, fname):
+def print_schedule_extension(schedule, fname, all_times):
     """ Output schedule using pandas
         Args:
             schedule (dict): {Course: (ClassRoom, time, [Students])}
@@ -417,9 +449,9 @@ def choose_student_extension(schedule,time_list):
             for student in student_list:
                  if count >= schedule[a_class][0].capacity:
                      break
-                 elif check_student_conflict(time_class,student,time_list):
+                 elif check_student_conflict(time_class, student, time_list):
                      continue
-                 elif check_student_conflict(time_lab,student,time_list):
+                 elif check_student_conflict(time_lab, student, time_list):
                      continue
                  else:
                      schedule[a_class][2].append(student)
@@ -431,7 +463,7 @@ def choose_student_extension(schedule,time_list):
             for student in student_list:
                  if count >= schedule[a_class][0].capacity:
                      break
-                 elif check_student_conflict(time_class,student,all_times):
+                 elif check_student_conflict(time_class, student, time_list):
                      continue
                  else:
                      schedule[a_class][2].append(student)
@@ -652,7 +684,7 @@ def make_schedule_extension(all_classes, all_rooms, teacherList, time_list):
     lab_time, lec_time = seperate_time_table(time_list)
     skipped_slots_lec = Queue()
     skipped_slots_lab = Queue()
-    ntimes = len(all_times)
+    ntimes = len(time_list)
     max_num_classes = min(len(all_classes), len(all_rooms) * ntimes)
     index_class = 0
     index_slot = 0
@@ -782,12 +814,13 @@ if __name__ == "__main__":
 
     else:
         # read enrollment data
-        all_students = read_extension_prefs(args.infiles[0])
+        all_students = read_enrollment(args.infiles[0])
         all_times, all_rooms, all_classes, all_teachers = read_extension_constraints(args.infiles[1], args.infiles[2])
         build_time_table(all_times)
         count_prefs(all_classes, all_students)
         assign_core(all_classes)
         # make schedule
+        start_time = timeit.default_timer()
         schedule = make_schedule_extension(all_classes, all_rooms, all_teachers, all_times)
         # remove previous enrolled student data
         for c in schedule:
@@ -795,12 +828,14 @@ if __name__ == "__main__":
         # read in preregistration data
         all_students = read_extension_prefs(args.infiles[3])
         count_prefs(all_classes, all_students)
-        choose_student_extension(schedule)
-        print_schedule_extension(schedule, args.outfile)
+        choose_student_extension(schedule, all_times)
+        print_schedule_extension(schedule, args.outfile, all_times)
         #subprocess.call(["perl", "is_valid.pl", "../test_data/haverfordConstraints.txt", args.infiles[0], args.outfile])
+        elapsed = timeit.default_timer() - start_time
+        print("\nTime taken:", elapsed)
 
         # for printing intermediate results
-        lab_time, lec_time = seperate_time_table(all_times)
+        #lab_time, lec_time = seperate_time_table(all_times)
 
 
 

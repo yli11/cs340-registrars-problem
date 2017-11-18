@@ -16,7 +16,7 @@ if (!$ARGV[0] || !$ARGV[1]) {
 
 
 #my $numrooms = $ARGV[0];
-my $numclasses = 365;
+my $numclasses = 260;
 #my $numslots = $ARGV[2];
 
 
