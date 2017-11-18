@@ -534,12 +534,12 @@ def make_lab(lab, timelist, lec_time, lec_queue, lab_queue, teacherList, all_cla
                                    all_rooms, possible_time // ntimes):
                 # class name : location, time, Students
                 if all_classes[lab].dept == "ARTS":
-                    result[all_classes[lab]] = (all_rooms[index_slot // ntimes],
+                    result[all_classes[lab]] = (all_rooms[possible_time // ntimes],
                                                 possible_time % ntimes + 1, [])
                 else:
                     new_course = Course(all_classes[lab].name, lab_prof, all_classes[lab].specs, 
                                 all_classes[lab].dept, all_classes[lab].level)
-                    result[new_course] = (all_rooms[index_slot // ntimes],
+                    result[new_course] = (all_rooms[possible_time // ntimes],
                                                            possible_time % ntimes + 1, [])
                 all_rooms[possible_time // ntimes].taken.append(possible_time % ntimes + 1)
                 teacherList[lab_prof][1].append(possible_time % ntimes + 1)
