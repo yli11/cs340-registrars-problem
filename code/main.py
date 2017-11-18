@@ -467,7 +467,7 @@ def make_lab(lab, timelist, lec_time, lec_queue, lab_queue, teacherList, all_cla
             else:
                 lab_queue.put(index_slots)
             index_slots = index_slots + 1
-        if all_classes[lab].dept.equals("ARTS"):
+        if all_classes[lab].dept == "ARTS":
             result[all_classes[lab] + " (Arts)"] = (all_rooms[index_slots // ntimes], index_slots % ntimes + 1, [])
         else:
             result[all_classes[lab]+" (lab)"] = (all_rooms[index_slots // ntimes], index_slots % ntimes + 1, [])
@@ -482,12 +482,12 @@ def make_lab(lab, timelist, lec_time, lec_queue, lab_queue, teacherList, all_cla
             if check_time_conflict(possible_time % ntimes+1, teacherList[all_classes[lab]], timelist,
                                    all_rooms, possible_time//ntimes):
                 # class name : location, time, Students
-                if all_classes[lab].dept.equals("ARTS"):
-                    result[all_classes[lab] + " (Arts)"] = (
-                    all_rooms[index_slots // ntimes], index_slots % ntimes + 1, [])
+                if all_classes[lab].dept == "ARTS":
+                    result[all_classes[lab] + " (Arts)"] = (all_rooms[index_slots // ntimes],
+                                                            possible_time % ntimes + 1, [])
                 else:
-                    result[all_classes[lab] + " (lab)"] = (
-                    all_rooms[index_slots // ntimes], index_slots % ntimes + 1, [])
+                    result[all_classes[lab] + " (lab)"] = (all_rooms[index_slots // ntimes],
+                                                           possible_time % ntimes + 1, [])
                 all_rooms[possible_time // ntimes].taken.put(possible_time % ntimes + 1)
                 assigned = True
                 break
@@ -504,12 +504,12 @@ def make_lab(lab, timelist, lec_time, lec_queue, lab_queue, teacherList, all_cla
                     else:
                         lab_queue.put(index_slots)
                     index_slots = index_slots + 1
-                if all_classes[lab].dept.equals("ARTS"):
-                    result[all_classes[lab] + " (Arts)"] = (
-                    all_rooms[index_slots // ntimes], index_slots % ntimes + 1, [])
+                if all_classes[lab].dept == "ARTS":
+                    result[all_classes[lab] + " (Arts)"] = (all_rooms[index_slots // ntimes],
+                                                            index_slots % ntimes + 1, [])
                 else:
-                    result[all_classes[lab] + " (lab)"] = (
-                    all_rooms[index_slots // ntimes], index_slots % ntimes + 1, [])
+                    result[all_classes[lab] + " (lab)"] = (all_rooms[index_slots // ntimes],
+                                                           index_slots % ntimes + 1, [])
                 all_rooms[index_slots // ntimes].taken.put(index_slots % ntimes + 1)
                 index_slots = index_slots + 1
             else:                               # recover skipped_slots
