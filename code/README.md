@@ -39,7 +39,7 @@ Mark pls fill in this part
 
 ## Make Schedule (for a single set of input)
 
-```$ python3 main.py ../test_data/haverfordStudentPrefs.txt ../test_data/haverfordConstraints_1.txt ../test_data/haverfordConstraints_2.txt —extension```
+```$ python3 main.py ../test_data/haverfordStudentPrefs.txt ../test_data/haverfordConstraints_1.txt ../test_data/haverfordConstraints_2.txt --extension -o ../test_data/extension_schedule.txt```
 
 *Args*
 
