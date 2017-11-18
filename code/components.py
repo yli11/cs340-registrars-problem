@@ -46,7 +46,7 @@ class Course:
         self.dept = dept
         self.level = level
         self.is_core = False
-        self.has_lab = []
+        self.has_lab = 0
         if specs is None:
             self.specs = []
         else:

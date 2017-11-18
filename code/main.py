@@ -195,11 +195,12 @@ def read_extension_constraints(filename_rt, filename_c):
         print(row, index)
         exit(-1)
 
-    # add has_lab attribute and append Course ID to lab instructor's class list
+    # add has_lab attribute for classes w/ labs
     try:
         for i in classes_with_labs:
             c = find_class(all_classes, i[0])
-            c.has_lab = [c.teacher if i[1]==0 else i[1]]
+            c.has_lab = c.teacher if i[1]==0 else i[1]
+            # append Course ID to lab instructor's class list
             if i[1]!=0:
                 all_teachers[i[1]].append(i[0])
     except:
