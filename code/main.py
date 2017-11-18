@@ -549,6 +549,7 @@ def make_schedule_extension(all_classes, all_rooms, teacherList, time_list):
                         skipped_slots_lab.put(index_slots)
                     else:
                         skipped_slots_lec.put(index_slots)
+                    index_slots = index_slots + 1
                 result[all_classes[index_class]] = (all_rooms[index_slots // ntimes], index_slots % ntimes + 1, [])
                 all_rooms[index_slots // ntimes].taken.put(index_slots % ntimes + 1)
                 index_slots = index_slots + 1
