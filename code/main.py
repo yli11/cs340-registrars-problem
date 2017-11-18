@@ -4,7 +4,7 @@ import argparse
 import pandas as pd
 import subprocess
 import functools
-import numpy as np
+import sys
 from multiprocessing import Queue
 from collections import defaultdict, OrderedDict
 from random import shuffle, randrange
@@ -271,8 +271,8 @@ def print_schedule_extension(schedule, fname):
             f.write(str(course.teacher))
             f.write("\t")
             f.write(repr_time(all_times[schedule[course][1]]))
-            #f.write("\t")
-            #f.write(' '.join([str(s.idx) for s in sorted(schedule[course][2], key=lambda t: t.idx)]))
+            f.write("\t")
+            f.write(' '.join([str(s.idx) for s in sorted(schedule[course][2], key=lambda t: t.idx)]))
             f.write("\n")
 
 
@@ -377,6 +377,8 @@ def choose_student(schedule):
                 schedule.get(a_class)[2].append(student)
                 count = count + 1
                 student.taken.append(schedule[a_class][1])
+
+
 def find_lab(schedule,course):
     """ find whether a course has a lab. If so return a tuple contains this class and lab, otherwise, return an
         empty tuple:
@@ -394,8 +396,8 @@ def check_student_conflict(t1,student,time_list):
     """
     for t2 in student.taken:
         if time_conflict(t1,t2,time_list):
-            return False
-    return True
+            return True
+    return False
             
                 
 def choose_student_extension(schedule):
@@ -405,7 +407,7 @@ def choose_student_extension(schedule):
         If the course has a lab, lab will share the same name of that course and stored time in it.
     """
     for a_class in schedule:
-        studet_list = a_class.specs
+        student_list = a_class.specs
         shuffle(student_list)
         time_class = schedule[a_class][1]
         count = 0
@@ -421,8 +423,8 @@ def choose_student_extension(schedule):
                  elif check_student_conflict(time_lab,student,all_times):
                      continue
                  else:
-                     schedule.get(a_class)[2].append(student)
-                     schedule.get(lab)[2].append(student)
+                     schedule[a_class][2].append(student)
+                     schedule[lab][2].append(student)
                      count = count + 1
                      student.taken.append(schedule[a_class][1])
                      student.taken.append(schedule[lab][1])
@@ -433,7 +435,7 @@ def choose_student_extension(schedule):
                  elif check_student_conflict(time_class,student,all_times):
                      continue
                  else:
-                     schedule.get(a_class)[2].append(student)
+                     schedule[a_class][2].append(student)
                      count = count + 1
                      student.taken.append(schedule[a_class][1])  
 
@@ -562,9 +564,9 @@ def make_schedule_basic(all_students, all_classes, all_rooms, ntimes, teacherLis
 def make_lab(lab, timelist, lec_time, lec_queue, lab_queue, teacherList, all_classes, all_rooms, result, index_slot,
              ntimes, lab_prof):
     if lab_queue.empty():
-        while not check_time_conflict(index_slot % ntimes + 1, teacherList[lab_prof][1],
-                                      timelist, all_rooms, index_slot // ntimes) or index_slot % ntimes + 1 \
-                in lec_time.keys():
+        while not index_slot % ntimes + 1 in lec_time.keys() or \
+                not check_time_conflict(index_slot % ntimes + 1, teacherList[lab_prof][1],
+                                      timelist, all_rooms, index_slot // ntimes):
             if index_slot % ntimes + 1 in lec_time.keys():
                 lec_queue.put(index_slot)
             else:
@@ -630,7 +632,7 @@ def make_lab(lab, timelist, lec_time, lec_queue, lab_queue, teacherList, all_cla
             else:  # recover skipped_slots
                 while not copy_lab.empty():
                     lab_queue.put(copy_lab.get())
-        return result, index_slot, lec_queue, lab_queue
+    return result, index_slot, lec_queue, lab_queue
 
 
 
@@ -658,10 +660,18 @@ def make_schedule_extension(all_classes, all_rooms, teacherList, time_list):
     result = {}
     while index_class < max_num_classes:
         if all_classes[index_class].dept == "ARTS":
-            result, index_slot, skipped_slots_lec, skipped_slots_lab = \
-                make_lab(index_class, time_list, lec_time, skipped_slots_lec,
-                         skipped_slots_lab, teacherList, all_classes, all_rooms, result, index_slot, ntimes,
-                         all_classes[index_class].teacher)
+            try:
+                result, index_slot, skipped_slots_lec, skipped_slots_lab = \
+                    make_lab(index_class, time_list, lec_time, skipped_slots_lec,
+                             skipped_slots_lab, teacherList, all_classes, all_rooms, result, index_slot,
+                              ntimes, all_classes[index_class].teacher)
+            except Exception as e:
+                print(e)
+                print("index_class = ", index_class)
+                print("index_slot = ", index_slot)
+                print("class ID", all_classes[index_class].name)
+                print("teacher:", all_classes[index_class].teacher)
+                exit(-1)
         else:
             if skipped_slots_lec.empty():
                 # teacherList[all_classes[index_class].teacher][1] are time that have already been taken
@@ -779,11 +789,13 @@ if __name__ == "__main__":
         count_prefs(all_classes, all_students)
         assign_core(all_classes)
         schedule = make_schedule_extension(all_classes, all_rooms, all_teachers, all_times)
+        choose_student_extension(schedule)
         print_schedule_extension(schedule, args.outfile)
         #subprocess.call(["perl", "is_valid.pl", "../test_data/haverfordConstraints.txt", args.infiles[0], args.outfile])
 
         # for printing intermediate results
         lab_time, lec_time = seperate_time_table(all_times)
+
 
 
     if args.test:
@@ -816,6 +828,7 @@ if __name__ == "__main__":
         for c in schedule:
             # schedule (dict): {Course: (ClassRoom, time_index, [Students])}
             print(c.name, "\t", c.teacher, "\t", schedule[c][0].idx, "\t", repr_time(all_times[schedule[c][1]]))
+            print("Students:", ' '.join([str(s.idx) for s in schedule[c][2]]))
 
 """
         print("\nOutput - Class schedule with students")
