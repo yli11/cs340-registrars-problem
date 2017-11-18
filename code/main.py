@@ -4,7 +4,6 @@ import argparse
 import pandas as pd
 import subprocess
 import functools
-import sys
 from multiprocessing import Queue
 from collections import defaultdict, OrderedDict
 from random import shuffle, randrange
@@ -12,7 +11,7 @@ from copy import deepcopy
 from components import ClassRoom, Student, Course
 
 # set max column width so that the list of enrolled students will not be cut off
-pd.set_option('max_colwidth', 100000000000)
+pd.set_option('max_colwidth', 1000000000000000)
 
 
 major_count = {"ANTH": 23, "ASTR": 7, "PHYS": 39, "BIOL": 70, "CHEM": 57, "ARCH": 6, "CMSC": 45, "COML": 9, "EAST": 9, "ECON": 91, "ENGL": 59, "ARTS": 11, "FREN": 14, "GERM": 7, "HIST": 21, "LING": 15, "MATH": 45, "MUSC": 12, "PHIL": 24, "POLS": 54, "PSYC": 54, "RELG": 9, "SOCL": 7, "SPAN": 36, "EDUC": 18, "ENVS": 19}
@@ -755,8 +754,8 @@ def make_schedule_extension(all_classes, all_rooms, teacherList, time_list):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
-        description='Usage: python3 main.py <studentprefs.txt> <basic_constraints.txt> '
-                    '(<extension_constriants.txt>) (--extension)')
+        description='Usage: python3 main.py <studentprefs/enrollment.txt> <basic_constraints.txt> '
+                    '(<extension_constriants-2.txt> <random_prefs.txt>) (--extension)')
     parser.add_argument('infiles', type=str, nargs='+',
                         help='Name of input file(s). Assuming the first file contains preference lists, '
                              'the second file contains basic constraints, the third one contains constraints for '
@@ -782,13 +781,20 @@ if __name__ == "__main__":
         subprocess.call(["perl", "is_valid.pl", args.infiles[1], args.infiles[0], args.outfile])
 
     else:
-        # read input
+        # read enrollment data
         all_students = read_extension_prefs(args.infiles[0])
         all_times, all_rooms, all_classes, all_teachers = read_extension_constraints(args.infiles[1], args.infiles[2])
         build_time_table(all_times)
         count_prefs(all_classes, all_students)
         assign_core(all_classes)
+        # make schedule
         schedule = make_schedule_extension(all_classes, all_rooms, all_teachers, all_times)
+        # remove previous enrolled student data
+        for c in schedule:
+            c.specs = []
+        # read in preregistration data
+        all_students = read_extension_prefs(args.infiles[3])
+        count_prefs(all_classes, all_students)
         choose_student_extension(schedule)
         print_schedule_extension(schedule, args.outfile)
         #subprocess.call(["perl", "is_valid.pl", "../test_data/haverfordConstraints.txt", args.infiles[0], args.outfile])
