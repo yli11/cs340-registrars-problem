@@ -39,7 +39,7 @@
 
 ## Make Schedule (for a single set of input)
 
-```$ python3 main.py ../test_data/haverfordStudentPrefs.txt ../test_data/haverfordConstraints_1.txt ../test_data/haverfordConstraints_2.txt --extension -o ../test_data/extension_schedule.txt```
+```$ python3 main.py ../test_data/haverfordStudentPrefs.txt ../test_data/haverfordConstraints_1.txt ../test_data/haverfordConstraints_2.txt ../test_data/1_studentprefs.txt --extension -o ../test_data/extension_schedule.txt```
 
 *Args*
 
@@ -48,4 +48,4 @@
 - 3 - input filename: classes, teachers, department, and level
 - after `-o` : output schedule name
 
-*Note* : the main function probably doesn't work at this point, so it's not called by the script. Only input is available. Can utilize the `—test` option to print parsed input
+*Note* : Can utilize the `—-test` option to print parsed input
