@@ -15,7 +15,7 @@ def check_one_schedule(partial_name):
     for c in schedule:
         c.specs = []
     # read in preregistration data
-    all_students = read_extension_prefs(partial_name + "_studentprefs.txt")
+    all_students = read_extension_prefs(partial_name + "_studentprefs.txt", all_classes)
     count_prefs(all_classes, all_students)
     choose_student_extension(schedule, all_times)
     count = 0
