@@ -131,12 +131,12 @@ def read_enrollment(filename):
 
     return all_students
 
-def map_prefs(i):
+def map_prefs(i, all_classes):
     """ Used for map, need all_classes to be global"""
     return all_classes[int(i)-1].name
 
 
-def read_extension_prefs(filename):
+def read_extension_prefs(filename, all_classes):
     """ Parse preference lists input
         Args:
             filename (string): name of the input preferece lists
@@ -150,7 +150,7 @@ def read_extension_prefs(filename):
         # put each student's class choices into a list
         student_classes = {}
         for index, row in df.iterrows():
-            student_classes[int(row['Student'])] = list(map(map_prefs, row['Classes'].split()))
+            student_classes[int(row['Student'])] = [map_prefs(i, all_classes) for i in row['Classes'].split()]
     except:
         print("When reading extension prefs, something went wrong:")
         traceback.print_exc()
@@ -889,7 +889,7 @@ if __name__ == "__main__":
         for c in schedule:
             c.specs = []
         # read in preregistration data
-        all_students = read_extension_prefs(args.infiles[3])
+        all_students = read_extension_prefs(args.infiles[3], all_classes)
         count_prefs(all_classes, all_students)
         choose_student_extension(schedule, all_times)
         elapsed = timeit.default_timer() - start_time
