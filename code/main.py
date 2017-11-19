@@ -292,19 +292,20 @@ def print_schedule_extension(schedule, fname, all_times):
     # create a dictionary for pandas to print
     schedule = OrderedDict(sorted(schedule.items(), key=lambda t:t[0].name))
 
-    with open(fname, 'w') as f:
-        f.write("Course\tRoom\tTeacher\tTime\tStudents\n")
-        for course in schedule:
-            f.write(str(course.name))
-            f.write("\t")
-            f.write(schedule[course][0].idx)
-            f.write("\t")
-            f.write(str(course.teacher))
-            f.write("\t")
-            f.write(repr_time(all_times[schedule[course][1]]))
-            f.write("\t")
-            f.write(' '.join([str(s.idx) for s in sorted(schedule[course][2], key=lambda t: t.idx)]))
-            f.write("\n")
+    f = open(fname, 'w')
+    f.write("Course\tRoom\tTeacher\tTime\tStudents\n")
+    for course in schedule:
+        f.write(str(course.name))
+        f.write("\t")
+        f.write(schedule[course][0].idx)
+        f.write("\t")
+        f.write(str(course.teacher))
+        f.write("\t")
+        f.write(repr_time(all_times[schedule[course][1]]))
+        f.write("\t")
+        f.write(' '.join([str(s.idx) for s in sorted(schedule[course][2], key=lambda t: t.idx)]))
+        f.write("\n")
+    f.close()
 
 
 def repr_time(t):
@@ -501,12 +502,12 @@ def TeacherIsValid(teacherList, result, classToSchedule, timeToSchedule):
 
 
 def sort_class(course):
-    weight = 0
+    weight = len(course.specs) 
     if course.dept in major_count:
         weight += major_count[course.dept] * 0.5
-    weight += 3 * (5 - course.level)
+    weight += 5 * (5 - course.level)
     if course.is_core:
-        weight = weight * 2
+        weight += 50
     return weight
 
 
@@ -560,6 +561,7 @@ def make_schedule_basic(all_students, all_classes, all_rooms, ntimes, teacherLis
             while not TeacherIsValid(teacherList, result, all_classes[index_class], index_slot % ntimes + 1):
                 # class name : location, time, students
                 skipped_slots.put(index_slot)
+                
                 index_slot = index_slot + 1
             result[all_classes[index_class]] = (all_rooms[index_slot // ntimes], index_slot % ntimes + 1, [])
             index_slot = index_slot + 1
@@ -574,19 +576,19 @@ def make_schedule_basic(all_students, all_classes, all_rooms, ntimes, teacherLis
                     assigned = True
                     break
                 else:
-                    copy_skipped_slots.put(possible_time)
+                    copy_skipped_slots.put(possible_time)                   
             if skipped_slots.empty():
                 skipped_slots = copy_skipped_slots
                 if not assigned:
                     while not TeacherIsValid(teacherList, result, all_classes[index_class], index_slot % ntimes + 1):
                         # class name : location, time, students
-                        skipped_slots.put(index_slot)
+                        skipped_slots.put(index_slot)                        
                         index_slot = index_slot + 1
                     result[all_classes[index_class]] = (all_rooms[index_slot // ntimes], index_slot % ntimes + 1, [])
                     index_slot = index_slot + 1
             else:                               # recover skipped_slots
                 while not copy_skipped_slots.empty():
-                    skipped_slots.put(copy_skipped_slots.get())
+                    skipped_slots.put(copy_skipped_slots.get())     
         index_class = index_class + 1
 
     return result
@@ -600,8 +602,10 @@ def make_lab(lab, timelist, lec_time, lec_queue, lab_queue, teacherList, all_cla
                                       timelist, all_rooms, index_slot // ntimes):
             if index_slot % ntimes + 1 in lec_time.keys():
                 lec_queue.put(index_slot)
+                
             else:
                 lab_queue.put(index_slot)
+                
             index_slot = index_slot + 1
         if all_classes[lab].dept == "ARTS":
             result[all_classes[lab]] = (all_rooms[index_slot // ntimes], index_slot % ntimes + 1, [])
@@ -638,6 +642,7 @@ def make_lab(lab, timelist, lec_time, lec_queue, lab_queue, teacherList, all_cla
                 break
             else:
                 copy_lab.put(possible_time)
+                
         if lab_queue.empty():
             lab_queue = copy_lab
             if not assigned:
@@ -646,8 +651,10 @@ def make_lab(lab, timelist, lec_time, lec_queue, lab_queue, teacherList, all_cla
                         in lec_time.keys():
                     if index_slot % ntimes + 1 in lec_time.keys():
                         lec_queue.put(index_slot)
+                        
                     else:
                         lab_queue.put(index_slot)
+                        
                     index_slot = index_slot + 1
                 if all_classes[lab].dept == "ARTS":
                     result[all_classes[lab]] = (all_rooms[index_slot // ntimes],
@@ -663,6 +670,7 @@ def make_lab(lab, timelist, lec_time, lec_queue, lab_queue, teacherList, all_cla
             else:  # recover skipped_slots
                 while not copy_lab.empty():
                     lab_queue.put(copy_lab.get())
+                    
     return result, index_slot, lec_queue, lab_queue
 
 
@@ -712,8 +720,10 @@ def make_schedule_extension(all_classes, all_rooms, teacherList, time_list):
                     # class name : location, time, students
                     if index_slot % ntimes + 1 in lab_time.keys():
                         skipped_slots_lab.put(index_slot)
+                        
                     else:
                         skipped_slots_lec.put(index_slot)
+                        
                     index_slot = index_slot + 1
                 result[all_classes[index_class]] = (all_rooms[index_slot // ntimes], index_slot % ntimes + 1, [])
                 all_rooms[index_slot // ntimes].taken.append(index_slot % ntimes + 1)
@@ -752,6 +762,7 @@ def make_schedule_extension(all_classes, all_rooms, teacherList, time_list):
                         break
                     else:
                         copy_skipped_slots.put(possible_time)
+                        
                 if skipped_slots_lec.empty():
                     skipped_slots_lec = copy_skipped_slots
                     if not assigned:
@@ -762,8 +773,10 @@ def make_schedule_extension(all_classes, all_rooms, teacherList, time_list):
                             # class name : location, time, students
                             if index_slot % ntimes + 1 in lab_time.keys():
                                 skipped_slots_lab.put(index_slot)
+                                
                             else:
                                 skipped_slots_lec.put(index_slot)
+                                
                             index_slot = index_slot + 1
                         result[all_classes[index_class]] = (
                                                           all_rooms[index_slot // ntimes], index_slot % ntimes + 1, [])
@@ -778,6 +791,7 @@ def make_schedule_extension(all_classes, all_rooms, teacherList, time_list):
                 else:  # recover skipped_slots
                     while not copy_skipped_slots.empty():
                         skipped_slots_lec.put(copy_skipped_slots.get())
+                        
         index_class = index_class + 1
     return result
 
@@ -830,6 +844,7 @@ if __name__ == "__main__":
         count_prefs(all_classes, all_students)
         choose_student_extension(schedule, all_times)
         print_schedule_extension(schedule, args.outfile, all_times)
+
         #subprocess.call(["perl", "is_valid.pl", "../test_data/haverfordConstraints.txt", args.infiles[0], args.outfile])
         elapsed = timeit.default_timer() - start_time
         print("\nTime taken:", elapsed)
@@ -840,6 +855,7 @@ if __name__ == "__main__":
 
 
     if args.test:
+
         print("\nLab Times:")
         for t in lab_time:
             print(t, lab_time[t])
@@ -851,7 +867,6 @@ if __name__ == "__main__":
         print("\nInput - Room information:")
         for r in all_rooms:
             print("Room location:", r.idx, "Size:", r.capacity)
-
         print("\nInput - Teacher information:")
         count = 0
         for t in all_teachers:
