@@ -111,12 +111,12 @@ Consider the time for choosing students for each class already been scheduled. S
 
 \subsection{Time Complexity} % Redo this. Use the new notation
 %Add time analysis for looping over skippedSlots in basic. Add extension 
-Using the data structures described above, we know that, in total, initialization requires \[n+n+n\log n+y+y\log y+m+m+xy+n = O(m\log m+y\log y +xy+n).\] By construction of the algorithm, the {\it while} loop terminates when all classrooms are $filled$ during all time periods or $2m$ classes are scheduled. Therefore, the nested {\it while} loops runs $\min(xy, 2m)$ times. Therefore, the overall time complexity of the algorithm is 
+Using the data structures described above, we know that, in total, initialization requires \[s+c+c\log c+p+r+r\log r+p+rt+s = O(c\log c+r\log r +rt+s).\] By construction of the algorithm, the {\it while} loop terminates when all classrooms are $filled$ during all time periods or $2m$ classes are scheduled. Therefore, the nested {\it while} loops runs $\min(rt, 2c)$ times. Therefore, the overall time complexity of the algorithm is 
 \begin{align*}
-T(n) &= O(m\log m+y\log y +xy+n)+O(\min(xy, 2m))\\
-& = O(n+y\log y+m\log m +xy)
+T(input) &= O(c\log c+r\log r +rt+s)+O(\min(rt, 2c))\\
+& = O(s+r\log r+c\log c +rt)
 \end{align*}
-Since $n$ dominates, we can say the time complexity of the algorithm is $O(n)$.
+Since $s$ dominates, we can say the time complexity of the algorithm is $O(s)$.
 
 \section{Proof of Correctness}
 \underline{\textit{Proof of Termination.}} By time analysis we know the {\it while} loop runs at most $\min(xy, 2m)$ times. Each time a class is scheduled, $k, j$ are incremented by $1$. Furthermore, each time $j$ reaches $x$, $i$ is also incremented by $1$. Therefore, one of the loop preconditions will be violated as $i$ and $k$ keeps increasing. Hence, the algorithm terminates.
@@ -151,9 +151,9 @@ slots fixed and the variable is number of students ranged from 50 to 5000. For e
 Within each set of input, our algorithm shows a stable performance. For instance, for 5000 students, 10 times slots, 50 rooms, 360 classes, the standard deviation on $student$  $preference$  $value$ is 0.0271174. Furthermore, the most significant stand deviation occurs when there're 50 students, which is 1.2649, still implying a stable performance. 
 \\Then consider the performance on $student$ $preference$ $value$ for sets of input where number of rooms, classes time slots fixed and student size is the variable. We choose the lower bound of $student$ $preference$ $value$ for each set of input. First, consider there're 10 time slots, 50 rooms, 360 classes. For this set of input, our student size ranges from 1000 to 5000. Computing $\frac{\text{student preference value}}{\text{best Case Student Value}}$, we find that for different size of students, the ratio is almost the same, with a standard deviation of 0.0009. Thus, the average of these ratios can represent the performance of our algorithm on these set of input. With an average of $0.86308125$, our algorithm can arrange $86\%$ of students for their preferred classes. Then we repeat the experiment on different sets of input with 20 time slots, 50 rooms, 360 classes, and again student size ranges from 1000 to 5000. For these set of data, we apply the same analysis strategy and get an average of $0.93096875$ ratio. This ratio means that for 20 time slots, 50 rooms, 360 classes, we can arrange $93\%$ of students for their preferred classes.\\
 \\We think the difference between the two different ratios result from different number of time slots. For the second set of data, there're 20 time slots, indicating more slots for classes and also a less occurrence of time conflicts. Under such a circumstance, our algorithm can arrange more classes and will thus generate a better performance.
+Different from the original version, for haverford extensions we no longer sort courses based on popularity only, however, algorithm will assign weight to classes based on course level, major and other information in $O(1)$ time as well. Since we need to assign all courses and sort them, thus it takes $O(c+c\log c) \to O(c\log c)$ time, and getting enrollment information from 2014 data takes $O(s)$ time.\\
 \section{Time Analysis: Haverford Extensions}
 \subsection{Data Structure}
-Different from the original version, for haverford extensions we no longer have students preference, implying that our algorithm doesn't need to traverse $S$ in order to assign popularity to classes. However, algorithm will assign weight to classes based on course level, major and other information in $O(1)$ time. Since we need to assign all courses and sort them, thus it takes $O(c+c\log c) \to O(c\log c)$ time.\\
 \\Also, for one of the extension, we're considering overlap among time slots. In our basic version, checking room conflicts and teachers' time conflicts only takes $O(1)$ since there're no overlaps we can check by simply testing whether there that time has already been taken. However, even a time slot is not taken, it still might cause a conflict because it may overlap with a time that's already taken. Thus, for each class we assigned, the algorithm needs to traverse list of taken time slots of current room and that of current teacher, which in worst case might traverse all time slots, that is $O(t)$. Also, overlapping time slots will also affect the process of enroll students into classes. Similarly, for each students, when assigning them to classes, algorithm needs to check whether there's a time conflict in students' personal schedule by traversing it. However, since each student can only take a limited number of classes, implying checking time conflicts for one students takes $O(1)$ time. Thus, choosing students has a $O(s)$ time complexity.\\
 \\In order to deal with skipped time slots that only work for lab session, we're using another FIFO queue to store skipped time slots. Since we're having time slots overlap, it is possible that a teacher has time conflicts with all time slots, so construction requires $O(t)$ time.\\
 \subsection{Time Complexity}
@@ -162,7 +162,7 @@ Aside from assigning lectures, we also need to assign labs which follows exactly
 \\Similarly, the main $while$ loop will terminate when all classes are scheduled or all time slots and rooms are taken, thus there will be $min(rt, c)$ iterations. As we mentioned above, due to overlapping time slots, each loop takes $O(t)$ to check conflicts, hence:
 \\\hspace*{30mm}$T(input) =  O(c\log c + p + rt + s) + O(min(c, rt)\times t)$
 \\\hspace*{46mm}$=O(c\log c + p + rt^2 + s)$\\
-Since $s$ dominates, we can say the time complexity of the algorithm is $O(s)$.
+Since $s$ dominates, we can say the time complexity of the algorithm is O(s).
 
 \end{document}
 
