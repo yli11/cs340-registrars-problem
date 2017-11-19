@@ -144,8 +144,9 @@ def read_extension_prefs(filename, all_classes):
             all_students (list): a list of Student objects with arrtibute `idx` (int) and `classes` (a list of int)
     """
     # read input file
-    df = pd.read_csv(filename, skiprows=1, sep="\t", names=['Student', 'Classes'])
-
+    df = pd.read_csv(filename, sep="\t", names=['Student', 'Classes'])
+    df = df[1:]
+    
     try:
         # put each student's class choices into a list
         student_classes = {}
