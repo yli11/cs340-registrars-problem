@@ -717,7 +717,7 @@ def make_schedule_extension(all_classes, all_rooms, teacherList, time_list):
     result = {}
     while index_class < len(all_classes) and index_slot < nslots:
         if all_classes[index_class].dept == "ARTS":
-            result, index_slot, skipped_slots_lec, skipped_slots_lab = \
+            result, index_slot, skipped_slots_lec, skipped_slots_lab, teacherList[all_classes[index_class].teacher][1]= \
                 make_lab(index_class, time_list, lec_time, skipped_slots_lec,
                          skipped_slots_lab, teacherList, all_classes, all_rooms, result, index_slot,
                          ntimes, all_classes[index_class].teacher)
