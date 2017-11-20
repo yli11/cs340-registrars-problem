@@ -35,12 +35,8 @@ def print_constraints(all_rooms, all_classes, all_times, all_teachers,constraint
         f.write("\n"+str(i)+"\t"+str(all_rooms[i].capacity))
     f.write("\nClasses\t"+str(nclasses))
     f.write("\nTeachers\t"+str(nteachers))
-    class_list = []
-    for i in all_teachers:
-        for c in all_teachers[i][0]:
-            class_list.append((c, i))
-    for (c, i) in class_list:
-        f.write("\n"+str(c)+"\t"+str(i))
+    for c in all_classes:
+        f.write("\n"+str(c.name)+"\t"+str(c.teacher))
     f.close()
 
 
@@ -55,10 +51,8 @@ def print_schedule_call_perl(schedule, fname, all_times, all_rooms, constraints,
 
     f = open(fname, 'w')
     f.write("Course\tRoom\tTeacher\tTime\tStudents\n")
-    time_list = []
-    prev_course = 0
     for course in schedule:
-        if prev_course != course.name:
+        if course.has_lab > -1:
             f.write(str(course.name))
             f.write("\t")
             f.write(str(all_rooms.index(schedule[course][0])))
@@ -69,6 +63,6 @@ def print_schedule_call_perl(schedule, fname, all_times, all_rooms, constraints,
             f.write("\t")
             f.write(' '.join([str(s.idx) for s in sorted(schedule[course][2], key=lambda t: t.idx)]))
             f.write("\n")
-        prev_course = course.name
+        #prev_course = course.name
     f.close()
     subprocess.call(["perl", "is_valid.pl", constraints, studentprefs, fname])
