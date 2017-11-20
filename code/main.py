@@ -411,12 +411,12 @@ def choose_student(schedule):
         for student in student_list:
             if count >= schedule[a_class][0].capacity:
                 break
-            elif schedule[a_class][1] in student.taken:
+            elif time in student.taken:
                 continue
             else:
                 schedule.get(a_class)[2].append(student)
                 count = count + 1
-                student.taken.append(schedule[a_class][1])
+                student.taken.append(time)
 
 
 def find_lab(schedule,course):
@@ -477,7 +477,7 @@ def choose_student_extension(schedule,time_list):
                  else:
                      schedule[a_class][2].append(student)
                      count = count + 1
-                     student.taken.append(schedule[a_class][1])  
+                     student.taken.append(schedule[a_class][1]) 
 
 def assign_core(class_list):
     core_count = {}
@@ -523,26 +523,21 @@ def time_conflict(t1, t2, time_list):
     """ Return true if two time slots t1 and t2 overlaps, false otherwise """
     # test whether days are the same
     if any(day in time_list[t1][2] for day in time_list[t2][2]):
-        # if t1.start >= t2.end, t2.start >= t1.end it must be overlapped
-        if (time_list[t1][0] >= time_list[t2][1]) or (time_list[t1][0] >= time_list[t2][1]):
-            return False
-        elif (time_list[t1][0] < time_list[t2][0] and time_list[t1][1] <= time_list[t2][0]) or \
-                (time_list[t2][0] < time_list[t1][0] and time_list[t2][1] <= time_list[t1][0]):
-            return False
-        else:
+        #if days overlap, sort by start time
+        sorted_by_start = sorted([time_list[t1], time_list[t2]], key=lambda x: x[0])
+        # if start time of the second is earlier than the end of the first one, there's overlap
+        if sorted_by_start[1][0] <= sorted_by_start[0][1]:
             return True
-    # if no shared day, must not have time conflict.
-    else:
-        return False
+    return False
 
 
-def check_time_conflict(t1, teacher_unavailable, timelist, all_rooms, index):
+def check_time_conflict(t1, teacher_unavailable, timelist, all_rooms, index_r):
     """ check for room-time conflicts and teacher-time conflicts """
     for t2 in teacher_unavailable:
         if time_conflict(t1, t2, timelist):
             return True
-    for t3 in all_rooms[index].taken:
-        if time_conflict(t1,t3,timelist):
+    for t3 in all_rooms[index_r].taken:
+        if time_conflict(t1, t3, timelist):
             return True
     return False
 
@@ -619,7 +614,7 @@ def make_lab(lab, timelist, lec_time, lec_queue, lab_queue, teacherList, all_cla
     nslots = len(timelist) * len(all_rooms)
     if index_slot < nslots:
         if len(lab_queue) == 0:
-            while index_slot < nslots and (not index_slot % ntimes + 1 in lec_time.keys() or \
+            while index_slot < nslots and (index_slot % ntimes + 1 in lec_time.keys() or \
                     check_time_conflict(index_slot % ntimes + 1, teacherList[lab_prof][1],
                                             timelist, all_rooms, index_slot // ntimes)):
                 if index_slot % ntimes + 1 in lec_time.keys():
@@ -637,7 +632,9 @@ def make_lab(lab, timelist, lec_time, lec_queue, lab_queue, teacherList, all_cla
                     result[new_course] = (all_rooms[index_slot // ntimes], index_slot % ntimes + 1, [])
                 # assign time to room
                 all_rooms[index_slot // ntimes].taken.append(index_slot % ntimes + 1)
+                print("before:", teacherList[lab_prof][1])
                 teacherList[lab_prof][1].append(index_slot % ntimes + 1)
+                print("after:", teacherList[lab_prof][1])
                 index_slot = index_slot + 1
 
         else:
@@ -660,7 +657,9 @@ def make_lab(lab, timelist, lec_time, lec_queue, lab_queue, teacherList, all_cla
                         result[new_course] = (all_rooms[possible_time // ntimes],
                                               possible_time % ntimes + 1, [])
                     all_rooms[possible_time // ntimes].taken.append(possible_time % ntimes + 1)
+                    print("before:", teacherList[lab_prof][1])
                     teacherList[lab_prof][1].append(possible_time % ntimes + 1)
+                    print("after:", teacherList[lab_prof][1])
                     assigned = True
                     break
                 else:
@@ -685,12 +684,14 @@ def make_lab(lab, timelist, lec_time, lec_queue, lab_queue, teacherList, all_cla
                             result[new_course] = (all_rooms[index_slot // ntimes],
                                                   index_slot % ntimes + 1, [])
                         all_rooms[index_slot // ntimes].taken.append(index_slot % ntimes + 1)
+                        print("before:", teacherList[lab_prof][1])
                         teacherList[lab_prof][1].append(possible_time % ntimes + 1)
+                        print("after:", teacherList[lab_prof][1])
                         index_slot = index_slot + 1
             # recover skipped_slots
             lab_queue += copy_lab
 
-    return result, index_slot, lec_queue, lab_queue, teacherList[lab_prof][1]
+    return result, index_slot, lec_queue, lab_queue, teacherList
 
 
 def make_schedule_extension(all_classes, all_rooms, teacherList, time_list):
@@ -717,10 +718,11 @@ def make_schedule_extension(all_classes, all_rooms, teacherList, time_list):
     result = {}
     while index_class < len(all_classes) and index_slot < nslots:
         if all_classes[index_class].dept == "ARTS":
-            result, index_slot, skipped_slots_lec, skipped_slots_lab, teacherList[all_classes[index_class].teacher][1]= \
+            result, index_slot, skipped_slots_lec, skipped_slots_lab, teacherList= \
                 make_lab(index_class, time_list, lec_time, skipped_slots_lec,
                          skipped_slots_lab, teacherList, all_classes, all_rooms, result, index_slot,
                          ntimes, all_classes[index_class].teacher)
+            teacherList[all_classes[index_class].teacher][1].append((index_slot-1) % ntimes + 1)
         else:
             if len(skipped_slots_lec) == 0:
                 # teacherList[all_classes[index_class].teacher][1] are time that have already been taken
@@ -744,10 +746,11 @@ def make_schedule_extension(all_classes, all_rooms, teacherList, time_list):
                         # append the lecture's time to lab instructor's list of unavailable times so that lab
                         # doesn't conflict with lecture
                         # teacherList[all_classes[index_class].has_lab][1].append((index_slot-1) % ntimes + 1)
-                        result, index_slot, skipped_slots_lec, skipped_slots_lab, teacherList[all_classes[index_class].has_lab][1] = make_lab(
+                        result, index_slot, skipped_slots_lec, skipped_slots_lab, teacherList = make_lab(
                             index_class, time_list, lec_time, skipped_slots_lec, skipped_slots_lab, 
                             teacherList, all_classes, all_rooms, result, index_slot, ntimes, 
                             all_classes[index_class].has_lab)
+                        teacherList[all_classes[index_class].has_lab][1].append((index_slot-1) % ntimes + 1)
 
             else:
                 copy_skipped_slots = []
@@ -768,10 +771,11 @@ def make_schedule_extension(all_classes, all_rooms, teacherList, time_list):
                             # append the lecture's time to lab instructor's list of unavailable times so that lab
                             # doesn't conflict with lecture
                             # teacherList[all_classes[index_class].has_lab][1].append(possible_time % ntimes + 1)
-                            result, index_slot, skipped_slots_lec, skipped_slots_lab, teacherList[all_classes[index_class].has_lab][1] = make_lab(
+                            result, index_slot, skipped_slots_lec, skipped_slots_lab, teacherList = make_lab(
                                 index_class, time_list, lec_time, skipped_slots_lec, skipped_slots_lab, 
                                 teacherList, all_classes, all_rooms, result, index_slot, ntimes, 
                                 all_classes[index_class].has_lab)
+                            teacherList[all_classes[index_class].has_lab][1].append((index_slot-1) % ntimes + 1)
                         break
                     else:
                         copy_skipped_slots.append(possible_time)
@@ -796,10 +800,11 @@ def make_schedule_extension(all_classes, all_rooms, teacherList, time_list):
                             teacherList[all_classes[index_class].teacher][1].append(index_slot % ntimes + 1)
                             index_slot += 1
                             if all_classes[index_class].has_lab > 0:
-                                result, index_slot, skipped_slots_lec, skipped_slots_lab, teacherList[all_classes[index_class].has_lab][1] = make_lab(
+                                result, index_slot, skipped_slots_lec, skipped_slots_lab, teacherList = make_lab(
                                         index_class, time_list, lec_time, skipped_slots_lec,
                                              skipped_slots_lab, teacherList, all_classes, all_rooms, result, index_slot,
                                              ntimes, all_classes[index_class].has_lab)
+                            teacherList[all_classes[index_class].has_lab][1].append((index_slot-1) % ntimes)
                 # recover skipped_slots
                 skipped_slots_lec += copy_skipped_slots
 
@@ -834,7 +839,6 @@ def make_schedule_extension(all_classes, all_rooms, teacherList, time_list):
             skipped_slots_lec = skipped_copy
         else: # not scheduling classes with labs because it's too complicated... for now
             index_class += 1
-    
 
     return result
 
@@ -906,7 +910,7 @@ if __name__ == "__main__":
 
 
         # for printing intermediate results
-        #lab_time, lec_time = seperate_time_table(all_times)
+        lab_time, lec_time = seperate_time_table(all_times)
 
 
 
