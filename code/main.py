@@ -815,7 +815,7 @@ def make_schedule_extension(all_classes, all_rooms, teacherList, time_list):
     while index_class < len(all_classes) and (skipped_slots_lec or skipped_slots_lab):
         if all_classes[index_class].dept == "ARTS" and skipped_slots_lab:
             skipped_copy = []
-            while len(skipped_slots_lec):
+            while len(skipped_slots_lab) > 0:
                 potential_time = skipped_slots_lab.pop(0)
                 if not check_time_conflict(potential_time % ntimes + 1, teacherList[all_classes[index_class].teacher][1],
                                             time_list, all_rooms, potential_time // ntimes):
@@ -824,7 +824,7 @@ def make_schedule_extension(all_classes, all_rooms, teacherList, time_list):
                 else:
                     skipped_copy.append(potential_time)
             index_class += 1
-            skipped_slots = skipped_copy
+            skipped_slots_lab = skipped_copy
         elif skipped_slots_lec and all_classes[index_class].has_lab == 0:
             skipped_copy = []
             while len(skipped_slots_lec) > 0:
