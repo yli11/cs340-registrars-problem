@@ -744,8 +744,7 @@ def make_schedule_extension(all_classes, all_rooms, teacherList, time_list):
                         # append the lecture's time to lab instructor's list of unavailable times so that lab
                         # doesn't conflict with lecture
                         # teacherList[all_classes[index_class].has_lab][1].append((index_slot-1) % ntimes + 1)
-                        result, index_slot, skipped_slots_lec, skipped_slots_lab, \
-                                teacherList[all_classes[index_class].has_lab][1] = make_lab(
+                        result, index_slot, skipped_slots_lec, skipped_slots_lab = make_lab(
                             index_class, time_list, lec_time, skipped_slots_lec, skipped_slots_lab, 
                             teacherList, all_classes, all_rooms, result, index_slot, ntimes, 
                             all_classes[index_class].has_lab)
@@ -769,7 +768,7 @@ def make_schedule_extension(all_classes, all_rooms, teacherList, time_list):
                             # append the lecture's time to lab instructor's list of unavailable times so that lab
                             # doesn't conflict with lecture
                             # teacherList[all_classes[index_class].has_lab][1].append(possible_time % ntimes + 1)
-                            result, index_slot, skipped_slots_lec, skipped_slots_lab, teacherList[all_classes[index_class].has_lab][1] = make_lab(
+                            result, index_slot, skipped_slots_lec, skipped_slots_lab = make_lab(
                                 index_class, time_list, lec_time, skipped_slots_lec, skipped_slots_lab, 
                                 teacherList, all_classes, all_rooms, result, index_slot, ntimes, 
                                 all_classes[index_class].has_lab)
@@ -797,8 +796,8 @@ def make_schedule_extension(all_classes, all_rooms, teacherList, time_list):
                             teacherList[all_classes[index_class].teacher][1].append(index_slot % ntimes + 1)
                             index_slot += 1
                             if all_classes[index_class].has_lab > 0:
-                                result, index_slot, skipped_slots_lec, skipped_slots_lab, teacherList[all_classes[index_class].has_lab][1] = \
-                                    make_lab(index_class, time_list, lec_time, skipped_slots_lec,
+                                result, index_slot, skipped_slots_lec, skipped_slots_lab = make_lab(
+                                        index_class, time_list, lec_time, skipped_slots_lec,
                                              skipped_slots_lab, teacherList, all_classes, all_rooms, result, index_slot,
                                              ntimes, all_classes[index_class].has_lab)
                 # recover skipped_slots
