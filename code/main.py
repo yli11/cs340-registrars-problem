@@ -897,9 +897,9 @@ if __name__ == "__main__":
         
         # for calling is_valid.pl
         # However, doesn't really work because labs share the same class name with lectures
-        #print_prefs(len(all_students), all_classes, args.infiles[3][:-4]+"_test.txt", args.infiles[3])
-        #print_constraints(all_rooms, all_classes, all_times, all_teachers, "../test_data/extension_constraints.txt")
-        #print_schedule_call_perl(schedule, args.outfile[:-4]+"_test.txt", all_times, all_rooms, "../test_data/extension_constraints.txt", args.infiles[3][:-4]+"_test.txt")
+        print_prefs(len(all_students), all_classes, args.infiles[3][:-4]+"_test.txt", args.infiles[3])
+        print_constraints(all_rooms, all_classes, all_times, all_teachers, "../test_data/extension_constraints.txt")
+        print_schedule_call_perl(schedule, args.outfile[:-4]+"_test.txt", all_times, all_rooms, "../test_data/extension_constraints.txt", args.infiles[3][:-4]+"_test.txt")
         
         print_schedule_extension(schedule, args.outfile, all_times)
 

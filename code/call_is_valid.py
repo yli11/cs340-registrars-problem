@@ -56,16 +56,19 @@ def print_schedule_call_perl(schedule, fname, all_times, all_rooms, constraints,
     f = open(fname, 'w')
     f.write("Course\tRoom\tTeacher\tTime\tStudents\n")
     time_list = []
+    prev_course = 0
     for course in schedule:
-        f.write(str(course.name))
-        f.write("\t")
-        f.write(str(all_rooms.index(schedule[course][0])))
-        f.write("\t")
-        f.write(str(course.teacher))
-        f.write("\t")
-        f.write(str(schedule[course][1]))
-        f.write("\t")
-        f.write(' '.join([str(s.idx) for s in sorted(schedule[course][2], key=lambda t: t.idx)]))
-        f.write("\n")
+        if prev_course != course.name:
+            f.write(str(course.name))
+            f.write("\t")
+            f.write(str(all_rooms.index(schedule[course][0])))
+            f.write("\t")
+            f.write(str(course.teacher))
+            f.write("\t")
+            f.write(str(schedule[course][1]))
+            f.write("\t")
+            f.write(' '.join([str(s.idx) for s in sorted(schedule[course][2], key=lambda t: t.idx)]))
+            f.write("\n")
+        prev_course = course.name
     f.close()
     subprocess.call(["perl", "is_valid.pl", constraints, studentprefs, fname])
