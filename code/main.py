@@ -145,7 +145,7 @@ def read_extension_prefs(filename, all_classes):
     """
     # read input file
     df = pd.read_csv(filename, sep="\t", names=['Student', 'Classes'])[1:]
-    
+
     try:
         # put each student's class choices into a list
         student_classes = {}
@@ -452,7 +452,7 @@ def choose_student_extension(schedule,time_list):
         time_class = schedule[a_class][1]
         count = 0
         #if a_class has lab, its has_lab attribute will be more than 0, and we will find lab
-        if a_class.has_lab > 0 :
+        if a_class.has_lab > 0 and find_lab(schedule,a_class):
             lab = find_lab(schedule,a_class)
             time_lab = schedule[lab][1]
             for student in student_list:
@@ -619,15 +619,15 @@ def make_lab(lab, timelist, lec_time, lec_queue, lab_queue, teacherList, all_cla
     nslots = len(timelist) * len(all_rooms)
     if index_slot < nslots:
         if len(lab_queue) == 0:
-            while (not index_slot % ntimes + 1 in lec_time.keys() or \
+            while index_slot < nslots and (not index_slot % ntimes + 1 in lec_time.keys() or \
                     check_time_conflict(index_slot % ntimes + 1, teacherList[lab_prof][1],
-                                            timelist, all_rooms, index_slot // ntimes)) and index_slot < nslots:
+                                            timelist, all_rooms, index_slot // ntimes)):
                 if index_slot % ntimes + 1 in lec_time.keys():
                     lec_queue.append(index_slot)
                 else:
                     lab_queue.append(index_slot)
                 index_slot = index_slot + 1
-            if index_slot < nslots: 
+            if index_slot < nslots:
                 if all_classes[lab].dept == "ARTS":
                     result[all_classes[lab]] = (all_rooms[index_slot // ntimes], index_slot % ntimes + 1, [])
                 else:
@@ -668,8 +668,8 @@ def make_lab(lab, timelist, lec_time, lec_queue, lab_queue, teacherList, all_cla
 
             if len(lab_queue) == 0:
                 if not assigned:
-                    while (check_time_conflict(index_slot % ntimes + 1, teacherList[lab_prof][1],
-                                                  timelist, all_rooms, index_slot // ntimes) or index_slot % ntimes + 1 in lec_time.keys()) and index_slot < nslots:
+                    while index_slot < nslots and (check_time_conflict(index_slot % ntimes + 1, teacherList[lab_prof][1],
+                                                  timelist, all_rooms, index_slot // ntimes) or index_slot % ntimes + 1 in lec_time.keys()):
                         if index_slot % ntimes + 1 in lec_time.keys():
                             lec_queue.append(index_slot)
                         else:
@@ -724,9 +724,9 @@ def make_schedule_extension(all_classes, all_rooms, teacherList, time_list):
         else:
             if len(skipped_slots_lec) == 0:
                 # teacherList[all_classes[index_class].teacher][1] are time that have already been taken
-                while (index_slot % ntimes + 1 in lab_time.keys() or check_time_conflict(
+                while index_slot < nslots and (index_slot % ntimes + 1 in lab_time.keys() or check_time_conflict(
                     index_slot % ntimes + 1, teacherList[all_classes[index_class].teacher][1],
-                    time_list, all_rooms, index_slot // ntimes)) and index_slot < nslots:
+                    time_list, all_rooms, index_slot // ntimes)):
                     # class name : location, time, students
                     if index_slot % ntimes + 1 in lab_time.keys():
                         skipped_slots_lab.append(index_slot)
@@ -778,9 +778,9 @@ def make_schedule_extension(all_classes, all_rooms, teacherList, time_list):
 
                 if len(skipped_slots_lec) == 0:
                     if not assigned:
-                        while (index_slot % ntimes + 1 in lab_time.keys() or check_time_conflict(
+                        while index_slot < nslots and (index_slot % ntimes + 1 in lab_time.keys() or check_time_conflict(
                             index_slot % ntimes + 1, teacherList[all_classes[index_class].teacher][1], time_list,
-                            all_rooms, index_slot // ntimes)) and index_slot < nslots:
+                            all_rooms, index_slot // ntimes)):
                             # class name : location, time, students
                             if index_slot % ntimes + 1 in lab_time.keys():
                                 skipped_slots_lab.append(index_slot)
@@ -806,7 +806,7 @@ def make_schedule_extension(all_classes, all_rooms, teacherList, time_list):
         index_class = index_class + 1
 
 
-    # backtrack and utilize skipped slots
+    # try to schedule remaining classes with skipped slots
     while index_class < len(all_classes) and (skipped_slots_lec or skipped_slots_lab):
         if all_classes[index_class].dept == "ARTS" and skipped_slots_lab:
             skipped_copy = []
@@ -831,8 +831,8 @@ def make_schedule_extension(all_classes, all_rooms, teacherList, time_list):
                 else:
                     skipped_copy.append(potential_time)
             index_class += 1
-            skipped_slots = skipped_copy
-        else: # not scheduling classes with lab because it's too complicated
+            skipped_slots_lec = skipped_copy
+        else: # not scheduling classes with labs because it's too complicated... for now
             index_class += 1
     
 
@@ -894,12 +894,14 @@ if __name__ == "__main__":
         choose_student_extension(schedule, all_times)
         elapsed = timeit.default_timer() - start_time
         print("\nTime taken:", elapsed)
+        
+        # for calling is_valid.pl
+        # However, doesn't really work because labs share the same class name with lectures
         #print_prefs(len(all_students), all_classes, args.infiles[3][:-4]+"_test.txt", args.infiles[3])
         #print_constraints(all_rooms, all_classes, all_times, all_teachers, "../test_data/extension_constraints.txt")
         #print_schedule_call_perl(schedule, args.outfile[:-4]+"_test.txt", all_times, all_rooms, "../test_data/extension_constraints.txt", args.infiles[3][:-4]+"_test.txt")
+        
         print_schedule_extension(schedule, args.outfile, all_times)
-
-        #subprocess.call(["perl", "is_valid.pl", "../test_data/haverfordConstraints.txt", args.infiles[0], args.outfile])
 
 
         # for printing intermediate results
