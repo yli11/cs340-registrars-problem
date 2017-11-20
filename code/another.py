@@ -882,20 +882,20 @@ if __name__ == "__main__":
             #if e.errno == errno.EPIPE:
                 #pass
         # remove previous enrolled student data
-        for c in schedule:
-            c.specs = []
+        #for c in schedule:
+        #    c.specs = []
         # read in preregistration data
-        all_students = read_extension_prefs(args.infiles[3], all_classes)
-        count_prefs(all_classes, all_students)
+        #all_students = read_extension_prefs(args.infiles[3], all_classes)
+        #count_prefs(all_classes, all_students)
         choose_student_extension(schedule, all_times)
         elapsed = timeit.default_timer() - start_time
         print("\nTime taken:", elapsed)
         
         # for calling is_valid.pl
         # However, doesn't really work because labs share the same class name with lectures
-        print_prefs(len(all_students), all_classes, args.infiles[3][:-4]+"_test.txt", args.infiles[3])
-        print_constraints(all_rooms, all_classes, all_times, all_teachers, args.outfile[:-12]+'extension_constraints.txt')
-        print_schedule_call_perl(schedule, args.outfile[:-4]+"_test.txt", all_times, all_rooms, args.outfile[:-12]+'extension_constraints.txt', args.infiles[3][:-4]+"_test.txt") #1_extension_schedule.txt
+        #print_prefs(len(all_students), all_classes, args.infiles[3][:-4]+"_test.txt", args.infiles[3])
+        print_constraints(all_rooms, all_classes, all_times, all_teachers, '../test_data/haverford_extension_constraints.txt')
+        print_schedule_call_perl(schedule, args.outfile, all_times, all_rooms, '../test_data/haverford_extension_constraints.txt', "../test_data/haverfordStudentPrefs.txt") #1_extension_schedule.txt
         
         print_schedule_extension(schedule, args.outfile, all_times)
 
