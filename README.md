@@ -80,6 +80,6 @@ The script automatically times the process and calls `is_valid.pl` to check sche
 
 Yutong Li, Jiaping Wang, Tianming Xu
 
-## Acknowledgemens
+## Acknowledgements
 
 We thank Professor Dianna Xu for her guidance and advice regarding this project.
