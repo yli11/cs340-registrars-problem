@@ -6,7 +6,6 @@ import subprocess
 import functools
 import timeit
 import traceback
-#from multiprocessing import Queue
 from collections import defaultdict, OrderedDict
 from random import shuffle, randrange
 from copy import deepcopy
@@ -132,7 +131,7 @@ def read_enrollment(filename):
     return all_students
 
 def map_prefs(i, all_classes):
-    """ Used for map, need all_classes to be global"""
+    """ Used for map in read_extension_prefs """
     return all_classes[int(i)-1].name
 
 
@@ -245,7 +244,7 @@ def read_extension_constraints(filename_rt, filename_c):
         print(i)
         exit(-1)
 
-    # add prof personal conflict info
+    # randomly assign personal conflicts for profs
     for t in all_teachers:
         n_unavailable_t = randrange(0, 5)
         all_teachers[t] = [all_teachers[t], [randrange(1, len(all_times)+1) for n in range(n_unavailable_t)]]
@@ -297,7 +296,7 @@ def print_schedule_extension(schedule, fname, all_times):
         Args:
             schedule (dict): {Course: (ClassRoom, time, [Students])}
     """
-    # create a dictionary for pandas to print
+
     schedule = OrderedDict(sorted(schedule.items(), key=lambda t:t[0].name))
 
     f = open(fname, 'w')
@@ -458,9 +457,7 @@ def choose_student_extension(schedule,time_list):
             for student in student_list:
                  if count >= schedule[a_class][0].capacity:
                      break
-                 elif check_student_conflict(time_class, student, time_list):
-                     continue
-                 elif check_student_conflict(time_lab, student, time_list):
+                 elif check_student_conflict(time_class, student, time_list) or check_student_conflict(time_lab, student, time_list):
                      continue
                  else:
                      schedule[a_class][2].append(student)
@@ -741,6 +738,10 @@ def make_schedule_extension(all_classes, all_rooms, teacherList, time_list):
                     index_slot += 1
                     
                     if all_classes[index_class].has_lab != 0 and index_slot < nslots:
+                        # append the lecture time to lab instructor's unavailable times
+                        # so that labs won't conflict with lecture
+                        if index_slot % ntimes + 1 not in teacherList[all_classes[index_class].has_lab][1]:
+                            teacherList[all_classes[index_class].has_lab][1].append(index_slot % ntimes + 1)
                         result, index_slot, skipped_slots_lec, skipped_slots_lab, teacherList = make_lab(
                             index_class, time_list, lec_time, skipped_slots_lec, skipped_slots_lab, 
                             teacherList, all_classes, all_rooms, result, index_slot, ntimes, 
@@ -762,6 +763,8 @@ def make_schedule_extension(all_classes, all_rooms, teacherList, time_list):
                         teacherList[all_classes[index_class].teacher][1].append(possible_time % ntimes + 1)
                         assigned = True
                         if all_classes[index_class].has_lab > 0:
+                            if possible_time % ntimes + 1 not in teacherList[all_classes[index_class].has_lab][1]:
+                                teacherList[all_classes[index_class].has_lab][1].append(possible_time % ntimes + 1)
                             result, index_slot, skipped_slots_lec, skipped_slots_lab, teacherList = make_lab(
                                 index_class, time_list, lec_time, skipped_slots_lec, skipped_slots_lab, 
                                 teacherList, all_classes, all_rooms, result, index_slot, ntimes, 
@@ -792,6 +795,8 @@ def make_schedule_extension(all_classes, all_rooms, teacherList, time_list):
                             teacherList[all_classes[index_class].teacher][1].append(index_slot % ntimes + 1)
                             index_slot += 1
                             if all_classes[index_class].has_lab > 0:
+                                if index_slot % ntimes + 1 not in teacherList[all_classes[index_class].has_lab][1]:
+                                    teacherList[all_classes[index_class].has_lab][1].append(index_slot % ntimes + 1)
                                 result, index_slot, skipped_slots_lec, skipped_slots_lab, teacherList = make_lab(
                                         index_class, time_list, lec_time, skipped_slots_lec,
                                              skipped_slots_lab, teacherList, all_classes, all_rooms, result, index_slot,
@@ -864,8 +869,9 @@ if __name__ == "__main__":
         choose_student(schedule)
         print_schedule(schedule, args.outfile)
         elapsed = timeit.default_timer() - start_time
-        print("\nTime taken:", elapsed)
+        print("Time taken:", elapsed)
         subprocess.call(["perl", "is_valid.pl", args.infiles[1], args.infiles[0], args.outfile])
+        print('\n')
 
     else:
         # read enrollment data
@@ -876,76 +882,24 @@ if __name__ == "__main__":
         count_prefs(all_classes, all_students)
         assign_core(all_classes)
         # make schedule
-        #try:
         schedule = make_schedule_extension(all_classes, all_rooms, all_teachers, all_times)
-        #except IOError as e:
-            #if e.errno == errno.EPIPE:
-                #pass
+
         # remove previous enrolled student data
         for c in schedule:
             c.specs = []
-        # read in preregistration data
+
+        # read in randomly generated preregistration data
         all_students = read_extension_prefs(args.infiles[3], all_classes)
         count_prefs(all_classes, all_students)
         choose_student_extension(schedule, all_times)
         elapsed = timeit.default_timer() - start_time
-        print("\nTime taken:", elapsed)
+        print("Time taken:", elapsed)
         
         # for calling is_valid.pl
-        # However, doesn't really work because labs share the same class name with lectures
+        # This will generate extra input files
         print_prefs(len(all_students), all_classes, args.infiles[3][:-4]+"_test.txt", args.infiles[3])
         print_constraints(all_rooms, all_classes, all_times, all_teachers, args.outfile[:-12]+'extension_constraints.txt')
-        print_schedule_call_perl(schedule, args.outfile[:-4]+"_test.txt", all_times, all_rooms, args.outfile[:-12]+'extension_constraints.txt', args.infiles[3][:-4]+"_test.txt") #1_extension_schedule.txt
-        
+        print_schedule_call_perl(schedule, args.outfile[:-4]+"_test.txt", all_times, all_rooms, args.outfile[:-12]+'extension_constraints.txt', args.infiles[3][:-4]+"_test.txt")
+        print('\n')
         print_schedule_extension(schedule, args.outfile, all_times)
 
-
-        # for printing intermediate results
-        lab_time, lec_time = seperate_time_table(all_times)
-
-
-
-    if args.test:
-
-        print("\nLab Times:")
-        for t in lab_time:
-            print(t, lab_time[t])
-
-        print("\nLecture Times:")
-        for t in lec_time:
-            print(t, lec_time[t])
-
-        print("\nInput - Room information:")
-        for r in all_rooms:
-            print("Room location:", r.idx, "Size:", r.capacity)
-        print("\nInput - Teacher information:")
-        count = 0
-        for t in all_teachers:
-            print("ID:", t, "Classes:", all_teachers[t][0], "Personal Conflicts:", all_teachers[t][1])
-            count += len(all_teachers[t][0])
-        print('\n', count, "classes have instructors.")
-
-        print("\nInput - Class information:")
-        for c in all_classes:
-            print("Class name:", c.name, "Teacher:", c.teacher, "Dept:", c.dept,
-                  "Level", c.level, "Is Core?", c.is_core, "Has_Lab?", c.has_lab)
-            print("specs:", [s.idx for s in c.specs])
-
-        print("\n ===============Schedule=============\n")
-        for c in schedule:
-            # schedule (dict): {Course: (ClassRoom, time_index, [Students])}
-            print(c.name, "\t", c.teacher, "\t", schedule[c][0].idx, "\t", repr_time(all_times[schedule[c][1]]))
-            print("Students:", ' '.join([str(s.idx) for s in schedule[c][2]]))
-
-"""
-        print("\nOutput - Class schedule with students")
-        total_enrollment = 0
-        for course in schedule:
-            print("Class name:", course.name, "Teacher:", course.teacher, "Time:", schedule[course][1])
-            print("Location:", schedule[course][0].idx, "Classroom size:", schedule[course][0].capacity, "Enrollment:",
-                  len(schedule[course][2]))
-            total_enrollment += len(schedule[course][2])
-            print("Students:", [s.idx for s in schedule[course][2]], "\n")
-
-        print("Total Enrollment:", total_enrollment)
-"""
